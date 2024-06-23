@@ -9,7 +9,7 @@ import (
 )
 
 // CreateToken creates a jwt token for a specific user
-func CreateToken(userID int) (string, error) {
+func CreateToken(userID string) (string, error) {
 	//TODO: add expiration time
 	claims := jwt.MapClaims{
 		"user": userID,

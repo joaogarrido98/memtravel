@@ -1,0 +1,1 @@
+This repo contains the backend API for the memtravel app

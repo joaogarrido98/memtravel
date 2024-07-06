@@ -16,9 +16,9 @@ func CreateToken(userID string) (string, error) {
 		"iat":  time.Now().Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString(configs.Envs.JWTSecret)
+	return token.SignedString([]byte(configs.Envs.JWTSecret))
 }
 
 // VerifyToken verifies a jwt token for a specific user

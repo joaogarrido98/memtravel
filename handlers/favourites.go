@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func AddFavouritesHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) AddFavouritesHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -17,7 +17,7 @@ func AddFavouritesHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func RemoveFavouritesHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RemoveFavouritesHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {

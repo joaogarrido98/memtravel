@@ -2,11 +2,30 @@ package handlers
 
 import (
 	"log"
+	"memtravel/middleware"
 	"net/http"
 )
 
 // Gets a specific trip
-func GetTripsHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) GetTripsHandler(w http.ResponseWriter, r *http.Request) {
+	var deferredErr error
+	defer func() {
+		if deferredErr != nil {
+			log.Printf("Error: %s", deferredErr.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}()
+
+	_, hasAuthUser := r.Context().Value(middleware.AuthUserID).(string)
+	if !hasAuthUser {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+}
+
+func (handler *Handler) AddTripHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -18,7 +37,7 @@ func GetTripsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func AddTripHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) GetUpcomingTripsHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -30,7 +49,7 @@ func AddTripHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetUpcomingTripsHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) GetPreviousTripsHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -42,7 +61,7 @@ func GetUpcomingTripsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetPreviousTripsHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) EditTripHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -54,19 +73,7 @@ func GetPreviousTripsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func EditTripHandler(w http.ResponseWriter, r *http.Request) {
-	var deferredErr error
-	defer func() {
-		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}()
-
-}
-
-func RemoveTripHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RemoveTripHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {

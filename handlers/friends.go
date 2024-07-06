@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func FriendRequestHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) FriendRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -16,19 +16,7 @@ func FriendRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func AcceptFriendHandler(w http.ResponseWriter, r *http.Request) {
-	var deferredErr error
-	defer func() {
-		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}()
-
-}
-
-func RemoveFriendHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) AcceptFriendHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -40,7 +28,7 @@ func RemoveFriendHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetFriendsHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RemoveFriendHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -52,7 +40,7 @@ func GetFriendsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetFriendHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) GetFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -64,7 +52,19 @@ func GetFriendHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func SearchFriendsHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) GetFriendHandler(w http.ResponseWriter, r *http.Request) {
+	var deferredErr error
+	defer func() {
+		if deferredErr != nil {
+			log.Printf("Error: %s", deferredErr.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}()
+
+}
+
+func (handler *Handler) SearchFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {

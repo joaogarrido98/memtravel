@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"memtravel/auth"
 	"memtravel/types"
@@ -25,7 +26,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if loginRequest.Email == "" || loginRequest.Password == "" {
+	if strings.TrimSpace(loginRequest.Email) == "" || strings.TrimSpace(loginRequest.Password) == "" {
 		_, deferredErr = w.Write([]byte("invalid"))
 		return
 	}

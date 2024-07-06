@@ -21,7 +21,7 @@ type Config struct {
 var Envs = initConfig()
 
 func initConfig() Config {
-	err := LoadEnv()
+	err := LoadEnv(".env")
 	if err != nil {
 		panic("Error loading .env file: " + err.Error())
 	}
@@ -37,9 +37,9 @@ func initConfig() Config {
 	}
 }
 
-func LoadEnv() error {
+func LoadEnv(filename string) error {
 	// open .env file
-	file, err := os.Open(".env")
+	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func AddRatingHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) AddRatingHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {

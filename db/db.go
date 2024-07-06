@@ -2,26 +2,29 @@ package db
 
 import (
 	"database/sql"
-	"memtravel/configs"
 
 	_ "github.com/lib/pq"
+
+	"memtravel/configs"
 )
 
-var Database *sql.DB
-
-func DBConnect() error {
+// DBConnect init the database connection
+func DBConnect() (*sql.DB, error) {
 	connStr := configs.Envs.DBUser + "://" +
 		configs.Envs.DBUser + ":" +
 		configs.Envs.DBPassword + "@" +
 		configs.Envs.DBAddress + "/" +
 		configs.Envs.DBName + "?sslmode=disable"
 
-	Database, err := sql.Open("postgres", connStr)
+	database, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	defer Database.Close()
+	err = database.Ping()
+	if err != nil {
+		return nil, err
+	}
 
-	return Database.Ping()
+	return database, err
 }

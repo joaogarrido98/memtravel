@@ -1,14 +1,15 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log"
+	"net/http"
+	"strings"
+
 	"memtravel/auth"
 	"memtravel/types"
-	"net/http"
 )
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -18,27 +19,28 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	if r.Body == nil {
-		deferredErr = errEmptyBody
-		return
-	}
+	loginRequest := new(types.User)
 
-	var loginRequest types.User
-
-	deferredErr = json.NewDecoder(r.Body).Decode(&loginRequest)
+	deferredErr = readBody(r, loginRequest)
 	if deferredErr != nil {
 		return
 	}
 
-	if loginRequest.Email == "" || loginRequest.Password == "" {
+	if strings.TrimSpace(loginRequest.Email) == "" || strings.TrimSpace(loginRequest.Password) == "" {
 		_, deferredErr = w.Write([]byte("invalid"))
 		return
 	}
 
 	var userData types.User
-	// TODO: get user password for specific email given from db
 
-	passwordValid, deferredErr := compareHash(loginRequest.Password, userData.Password)
+	rows := handler.database.QueryRow("SELECT email, password FROM Users WHERE email = $1", loginRequest.Email)
+
+	deferredErr = rows.Scan(&userData.Email, &userData.Password)
+	if deferredErr != nil {
+		return
+	}
+
+	passwordValid, deferredErr := auth.CompareHash(loginRequest.Password, userData.Password)
 	if deferredErr != nil {
 		return
 	}
@@ -56,7 +58,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	_, deferredErr = w.Write([]byte(token))
 }
 
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -68,7 +70,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -80,7 +82,7 @@ func PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -92,7 +94,7 @@ func PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func CloseAccountHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -104,7 +106,7 @@ func CloseAccountHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
@@ -116,7 +118,7 @@ func AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func AccountInformationEditHandler(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {

@@ -33,9 +33,9 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var userData types.User
 
-	rows := handler.database.QueryRow("SELECT email, password FROM Users WHERE email = $1", loginRequest.Email)
+	rows := handler.database.QueryRow("SELECT email, password, active FROM Users WHERE email = $1", loginRequest.Email)
 
-	deferredErr = rows.Scan(&userData.Email, &userData.Password)
+	deferredErr = rows.Scan(&userData.Email, &userData.Password, &userData.Active)
 	if deferredErr != nil {
 		return
 	}
@@ -45,7 +45,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !passwordValid {
+	if !passwordValid || !userData.Active {
 		_, deferredErr = w.Write([]byte("invalid"))
 		return
 	}

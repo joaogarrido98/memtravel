@@ -9,13 +9,17 @@ import (
 )
 
 type Config struct {
-	Port       string
-	DBUser     string
-	DBPassword string
-	DBAddress  string
-	DBName     string
-	JWTSecret  string
-	JWTIssuer  string
+	Port          string
+	DBUser        string
+	DBPassword    string
+	DBAddress     string
+	DBName        string
+	JWTSecret     string
+	JWTIssuer     string
+	EmailFrom     string
+	EmailPassword string
+	SMTPHost      string
+	SMTPPort      string
 }
 
 var Envs = initConfig()
@@ -27,13 +31,17 @@ func initConfig() Config {
 	}
 
 	return Config{
-		Port:       os.Getenv("PORT"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBAddress:  fmt.Sprintf("%s:%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
-		DBName:     os.Getenv("DB_NAME"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
-		JWTIssuer:  os.Getenv("JWT_ISSUER"),
+		Port:          os.Getenv("PORT"),
+		DBUser:        os.Getenv("DB_USER"),
+		DBPassword:    os.Getenv("DB_PASSWORD"),
+		DBAddress:     fmt.Sprintf("%s:%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
+		DBName:        os.Getenv("DB_NAME"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		JWTIssuer:     os.Getenv("JWT_ISSUER"),
+		EmailFrom:     os.Getenv("EMAIL_FROM"),
+		EmailPassword: os.Getenv("EMAIL_PASSWORD"),
+		SMTPHost:      os.Getenv("SMTP_HOST"),
+		SMTPPort:      os.Getenv("SMTP_PORT"),
 	}
 }
 

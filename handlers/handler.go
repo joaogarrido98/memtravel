@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"memtravel/configs"
 	"net/http"
+	"net/smtp"
+	"text/template"
 )
 
 // Handler object that holds all needed attributes for the handlers
@@ -36,4 +40,29 @@ func writeJSON(w http.ResponseWriter, status int, data any) error {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(data)
+}
+
+func sendEmail(sendTo []string, emailType string, subject string, context any) error {
+	auth := smtp.PlainAuth("", configs.Envs.EmailFrom, configs.Envs.EmailPassword, configs.Envs.SMTPHost)
+
+	t, err := template.ParseFiles(emailType)
+	if err != nil {
+		return err
+	}
+
+	var body bytes.Buffer
+
+	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	_, err = body.Write([]byte(fmt.Sprintf("%s\n%s\n\n", subject, mimeHeaders)))
+	if err != nil {
+		return err
+	}
+
+	err = t.Execute(&body, context)
+	if err != nil {
+		return err
+	}
+
+	return smtp.SendMail(configs.Envs.SMTPHost+":"+configs.Envs.SMTPPort, auth, configs.Envs.EmailFrom, sendTo, body.Bytes())
 }

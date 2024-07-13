@@ -89,8 +89,12 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), AuthUserID, claims["user"])
-		request := r.WithContext(ctx)
+		if claims["user"] == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		request := r.WithContext(context.WithValue(r.Context(), AuthUserID, claims["user"]))
 
 		next.ServeHTTP(w, request)
 	})

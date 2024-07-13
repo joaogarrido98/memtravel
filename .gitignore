@@ -1,3 +1,4 @@
 .env
 memtravel.exe
 .vscode
+__debug_*

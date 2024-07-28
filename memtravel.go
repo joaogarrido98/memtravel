@@ -1,21 +1,19 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"time"
 
-	_ "github.com/lib/pq"
-
 	"memtravel/configs"
+	"memtravel/db"
 	"memtravel/handlers"
 	"memtravel/middleware"
 )
 
 func main() {
 	// open a connection to the database
-	database, err := dbConnect()
+	database, err := db.DBConnect()
 	if err != nil {
 		log.Fatalf("could not connect to database: %s", err)
 	}
@@ -47,7 +45,7 @@ func main() {
 	http.HandleFunc("POST /account/register", middleware.LogMiddleware(handler.RegisterHandler))
 	http.HandleFunc("POST /account/password/recover", middleware.LogMiddleware(handler.PasswordRecoverHandler))
 	http.HandleFunc("POST /account/password/change", authMiddleware(handler.PasswordChangeHandler))
-	http.HandleFunc("POST /account/close/{id}", authMiddleware(handler.CloseAccountHandler))
+	http.HandleFunc("POST /account/close", authMiddleware(handler.CloseAccountHandler))
 	http.HandleFunc("GET /account/information/view/{id}", authMiddleware(handler.AccountInformationHandler))
 	http.HandleFunc("POST /account/information/edit/{id}", authMiddleware(handler.AccountInformationEditHandler))
 
@@ -73,25 +71,4 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-}
-
-// dbConnect init the database connection
-func dbConnect() (*sql.DB, error) {
-	connStr := configs.Envs.DBUser + "://" +
-		configs.Envs.DBUser + ":" +
-		configs.Envs.DBPassword + "@" +
-		configs.Envs.DBAddress + "/" +
-		configs.Envs.DBName + "?sslmode=disable"
-
-	database, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	err = database.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	return database, err
 }

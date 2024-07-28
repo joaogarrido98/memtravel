@@ -58,9 +58,9 @@ func sendEmail(sendTo []string, emailType string, subject string, context any) e
 
 	var body bytes.Buffer
 
-	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	mimeHeaders := "\nMIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
 
-	_, err = body.Write([]byte(fmt.Sprintf("%s\n%s\n\n", subject, mimeHeaders)))
+	_, err = body.Write([]byte("Subject: " + subject + mimeHeaders))
 	if err != nil {
 		return err
 	}

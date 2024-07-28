@@ -1,18 +1,20 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"memtravel/auth"
+	"memtravel/configs"
 	"memtravel/language"
 	"memtravel/middleware"
 	"memtravel/types"
 )
-
-// todo: add language id
 
 func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
@@ -31,8 +33,14 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	languageID := r.URL.Query().Get("lid")
+	if !language.SupportedLanguage(languageID) {
+		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
+		return
+	}
+
 	if strings.TrimSpace(loginRequest.Email) == "" || strings.TrimSpace(loginRequest.Password) == "" {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.EmptyEmailPassword), nil)
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
 		return
 	}
 
@@ -51,12 +59,12 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !passwordValid {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.PasswordInvalid), nil)
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.PasswordInvalid), nil)
 		return
 	}
 
 	if !userData.Active {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.EmptyEmailPassword), nil)
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.InactiveUser), nil)
 		return
 	}
 
@@ -90,6 +98,44 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		}
 	}()
 
+	languageID := r.URL.Query().Get("lid")
+	if !language.SupportedLanguage(languageID) {
+		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
+		return
+	}
+
+	var recoverPasswordRequest types.User
+
+	deferredErr = readBody(r, &recoverPasswordRequest)
+	if deferredErr != nil {
+		return
+	}
+
+	if recoverPasswordRequest.Email == "" {
+		deferredErr = fmt.Errorf("email cannot be empty")
+		return
+	}
+
+	newPassword := createNewPassword()
+
+	hashPassword, deferredErr := auth.HashPassword(newPassword)
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = handler.database.Update("UPDATE users SET password=$1 WHERE email=$2", hashPassword, recoverPasswordRequest.Email)
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = sendEmail(
+		[]string{recoverPasswordRequest.Email},
+		"./templates/recover.gohtml",
+		language.GetTranslation(languageID, language.PasswordRecover),
+		types.RecoverPasswordTemplate{
+			Password: newPassword,
+		},
+	)
 }
 
 func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
@@ -103,10 +149,6 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 	}()
 
 	userID := r.Context().Value(middleware.AuthUserID)
-	if userID == "" {
-		deferredErr = fmt.Errorf("userID cannot be empty")
-		return
-	}
 
 	var passwordChangeRequest types.ChangePassword
 
@@ -115,15 +157,21 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if strings.TrimSpace(passwordChangeRequest.NewPassword) == "" || strings.TrimSpace(passwordChangeRequest.OldPassword) == "" {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.EmptyEmailPassword), nil)
+	languageID := r.URL.Query().Get("lid")
+	if !language.SupportedLanguage(languageID) {
+		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
 		return
 	}
 
-	// if !newPasswordIsValid(passwordChangeRequest.NewPassword) {
-	// 	deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.EmptyEmailPassword), nil)
-	// 	return
-	// }
+	if strings.TrimSpace(passwordChangeRequest.NewPassword) == "" || strings.TrimSpace(passwordChangeRequest.OldPassword) == "" {
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyOldNewPassword), nil)
+		return
+	}
+
+	if !newPasswordIsValid(passwordChangeRequest.NewPassword) {
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.NewPasswordInvalid), nil)
+		return
+	}
 
 	var userData types.User
 
@@ -140,7 +188,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if !passwordValid {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation("1", language.PasswordInvalid), nil)
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.ChagePasswordInvalid), nil)
 		return
 	}
 
@@ -154,7 +202,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", language.GetTranslation("1", language.PasswordChanged), nil)
+	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.PasswordChanged), nil)
 }
 
 func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -168,12 +216,13 @@ func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Reque
 	}()
 
 	userID := r.Context().Value(middleware.AuthUserID)
-	if userID == "" {
-		deferredErr = fmt.Errorf("userID cannot be empty")
+
+	deferredErr = handler.database.Update("UPDATE users SET active=$1 WHERE id=$2", false, userID)
+	if deferredErr != nil {
 		return
 	}
 
-	deferredErr = handler.database.Update("UPDATE users SET active=$1 WHERE id=$2", false, userID)
+	deferredErr = writeServerResponse(w, "", "", nil)
 }
 
 func (handler *Handler) AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
@@ -198,4 +247,41 @@ func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *
 		}
 	}()
 
+}
+
+func newPasswordIsValid(password string) bool {
+	if len(password) <= 8 || len(password) > 32 {
+		return false
+	}
+
+	var hasLowerCase = false
+	var hasUpperCase = false
+	var hasNumber = false
+	var hasSpecial = false
+
+	for _, char := range password {
+		switch {
+		case unicode.IsSpace(char):
+			return false
+		case unicode.IsUpper(char):
+			hasUpperCase = true
+		case unicode.IsLower(char):
+			hasLowerCase = true
+		case unicode.IsNumber(char):
+			hasNumber = true
+		case unicode.IsPunct(char), unicode.IsSymbol(char):
+			hasSpecial = true
+		}
+	}
+
+	return hasLowerCase && hasUpperCase && hasNumber && hasSpecial
+}
+
+func createNewPassword() string {
+	var buf bytes.Buffer
+	for i := uint(0); i < 32; i++ {
+		buf.WriteByte(configs.Envs.PasswordCreation[rand.Intn(len(configs.Envs.PasswordCreation))])
+	}
+
+	return buf.String()
 }

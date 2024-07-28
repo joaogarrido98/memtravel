@@ -19,3 +19,7 @@ type ChangePassword struct {
 	OldPassword string `json:"op,omitempty"`
 	NewPassword string `json:"np,omitempty"`
 }
+
+type RecoverPasswordTemplate struct {
+	Password string
+}

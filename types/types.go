@@ -1,5 +1,7 @@
 package types
 
+import "net/http"
+
 // ServerResponse holds the generic type for all responses in
 type ServerResponse struct {
 	Response string      `json:"rs"`
@@ -23,3 +25,17 @@ type ChangePassword struct {
 type RecoverPasswordTemplate struct {
 	Password string
 }
+
+type Middleware func(next http.HandlerFunc) http.HandlerFunc
+
+type WrappedWriter struct {
+	http.ResponseWriter
+	StatusCode int
+}
+
+func (w *WrappedWriter) WriteHeader(statusCode int) {
+	w.ResponseWriter.WriteHeader(statusCode)
+	w.StatusCode = statusCode
+}
+
+type ContextKey string

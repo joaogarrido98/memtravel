@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"memtravel/configs"
 	"memtravel/db"
@@ -10,6 +11,12 @@ import (
 	"net/http"
 	"net/smtp"
 	"text/template"
+)
+
+const languageParamID string = "lid"
+
+var (
+	errorLanguageID = errors.New("languageID is not supported")
 )
 
 // Handler object that holds all needed attributes for the handlers

@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -11,6 +9,7 @@ import (
 
 	"memtravel/auth"
 	"memtravel/configs"
+	"memtravel/db"
 	"memtravel/language"
 	"memtravel/middleware"
 	"memtravel/types"
@@ -20,7 +19,6 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -33,9 +31,9 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	languageID := r.URL.Query().Get("lid")
+	languageID := r.URL.Query().Get(languageParamID)
 	if !language.SupportedLanguage(languageID) {
-		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
+		deferredErr = errorLanguageID
 		return
 	}
 
@@ -46,7 +44,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var userData types.User
 
-	rows := handler.database.QueryRow("SELECT id, email, password, active FROM Users WHERE email = $1", loginRequest.Email)
+	rows := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
 
 	deferredErr = rows.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active)
 	if deferredErr != nil {
@@ -76,31 +74,18 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	deferredErr = writeServerResponse(w, "", token, nil)
 }
 
-func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var deferredErr error
-	defer func() {
-		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}()
-
-}
-
 func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
 
-	languageID := r.URL.Query().Get("lid")
+	languageID := r.URL.Query().Get(languageParamID)
 	if !language.SupportedLanguage(languageID) {
-		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
+		deferredErr = errorLanguageID
 		return
 	}
 
@@ -112,7 +97,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	if recoverPasswordRequest.Email == "" {
-		deferredErr = fmt.Errorf("email cannot be empty")
+		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
 		return
 	}
 
@@ -123,7 +108,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	deferredErr = handler.database.Update("UPDATE users SET password=$1 WHERE email=$2", hashPassword, recoverPasswordRequest.Email)
+	deferredErr = handler.database.Update(db.UpdateUserPassword, hashPassword, recoverPasswordRequest.Email)
 	if deferredErr != nil {
 		return
 	}
@@ -136,13 +121,18 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 			Password: newPassword,
 		},
 	)
+
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
 }
 
 func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -157,9 +147,9 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	languageID := r.URL.Query().Get("lid")
+	languageID := r.URL.Query().Get(languageParamID)
 	if !language.SupportedLanguage(languageID) {
-		deferredErr = fmt.Errorf("languageID is not supported: got %s", languageID)
+		deferredErr = errorLanguageID
 		return
 	}
 
@@ -175,7 +165,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 
 	var userData types.User
 
-	rows := handler.database.QueryRow("SELECT id, password FROM Users WHERE id = $1", userID)
+	rows := handler.database.QueryRow(db.GetPasswordDetails, userID)
 
 	deferredErr = rows.Scan(&userData.UserID, &userData.Password)
 	if deferredErr != nil {
@@ -197,7 +187,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	deferredErr = handler.database.Update("UPDATE users SET password=$1 WHERE id=$2", hashedPassword, userID)
+	deferredErr = handler.database.Update(db.UpdatePassword, hashedPassword, userID)
 	if deferredErr != nil {
 		return
 	}
@@ -209,7 +199,6 @@ func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Reque
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -217,19 +206,24 @@ func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Reque
 
 	userID := r.Context().Value(middleware.AuthUserID)
 
-	deferredErr = handler.database.Update("UPDATE users SET active=$1 WHERE id=$2", false, userID)
+	languageID := r.URL.Query().Get(languageParamID)
+	if !language.SupportedLanguage(languageID) {
+		deferredErr = errorLanguageID
+		return
+	}
+
+	deferredErr = handler.database.Update(db.UpdateUserStatus, false, userID)
 	if deferredErr != nil {
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", "", nil)
+	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.AccountClose), nil)
 }
 
 func (handler *Handler) AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -241,7 +235,17 @@ func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: %s", deferredErr.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}()
+
+}
+
+func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	var deferredErr error
+	defer func() {
+		if deferredErr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -250,7 +254,7 @@ func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *
 }
 
 func newPasswordIsValid(password string) bool {
-	if len(password) <= 8 || len(password) > 32 {
+	if len(password) < 8 || len(password) > 32 {
 		return false
 	}
 

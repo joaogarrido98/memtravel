@@ -34,7 +34,8 @@ func DBConnect() (Database, error) {
 	return Database{database}, err
 }
 
-func (database Database) Update(query string, data ...any) error {
+// ExecQuery executes a non-select query
+func (database Database) ExecQuery(query string, data ...any) error {
 	result, err := database.Exec(query, data...)
 	if err != nil {
 		return err
@@ -45,8 +46,8 @@ func (database Database) Update(query string, data ...any) error {
 		return err
 	}
 
-	if rows != 1 {
-		return fmt.Errorf("expected on row to be affected but rececvied: %d", rows)
+	if rows == 0 {
+		return fmt.Errorf("expected at least one row to be affected but rececvied: %d", rows)
 	}
 
 	return nil

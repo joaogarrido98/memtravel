@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Config is the blueprint for the .env values
 type Config struct {
 	Port             string
 	DBUser           string
@@ -23,10 +24,11 @@ type Config struct {
 	PasswordCreation []byte
 }
 
+// Envs holds the .env values
 var Envs = initConfig()
 
 func initConfig() Config {
-	err := LoadEnv(".env")
+	err := loadEnv(".env")
 	if err != nil {
 		panic("Error loading .env file: " + err.Error())
 	}
@@ -47,7 +49,7 @@ func initConfig() Config {
 	}
 }
 
-func LoadEnv(filename string) error {
+func loadEnv(filename string) error {
 	// open .env file
 	file, err := os.Open(filename)
 	if err != nil {

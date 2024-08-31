@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"bytes"
+	"log"
 	"math/rand"
 	"net/http"
+	"net/mail"
 	"strings"
+	"time"
 	"unicode"
 
 	"memtravel/auth"
@@ -19,6 +22,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -38,7 +42,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.TrimSpace(loginRequest.Email) == "" || strings.TrimSpace(loginRequest.Password) == "" {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
+		deferredErr = errorInvalidRequestData
 		return
 	}
 
@@ -57,12 +61,12 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !passwordValid {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.PasswordInvalid), nil)
+		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.PasswordInvalid))
 		return
 	}
 
 	if !userData.Active {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.InactiveUser), nil)
+		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.InactiveUser))
 		return
 	}
 
@@ -71,13 +75,14 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", token, nil)
+	deferredErr = writeServerResponse(w, true, token)
 }
 
 func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -97,7 +102,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	if recoverPasswordRequest.Email == "" {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
+		deferredErr = errorInvalidRequestData
 		return
 	}
 
@@ -108,7 +113,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	deferredErr = handler.database.Update(db.UpdateUserPassword, hashPassword, recoverPasswordRequest.Email)
+	deferredErr = handler.database.ExecQuery(db.UpdateUserPassword, hashPassword, recoverPasswordRequest.Email)
 	if deferredErr != nil {
 		return
 	}
@@ -126,13 +131,14 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.EmptyEmailPassword), nil)
+	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.PasswordRecoverySuccess))
 }
 
 func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -154,12 +160,12 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if strings.TrimSpace(passwordChangeRequest.NewPassword) == "" || strings.TrimSpace(passwordChangeRequest.OldPassword) == "" {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.EmptyOldNewPassword), nil)
+		deferredErr = errorInvalidRequestData
 		return
 	}
 
 	if !newPasswordIsValid(passwordChangeRequest.NewPassword) {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.NewPasswordInvalid), nil)
+		deferredErr = errorInvalidRequestData
 		return
 	}
 
@@ -178,7 +184,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if !passwordValid {
-		deferredErr = writeServerResponse(w, "invalid", language.GetTranslation(languageID, language.ChagePasswordInvalid), nil)
+		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.ChagePasswordInvalid))
 		return
 	}
 
@@ -187,18 +193,19 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	deferredErr = handler.database.Update(db.UpdatePassword, hashedPassword, userID)
+	deferredErr = handler.database.ExecQuery(db.UpdatePassword, hashedPassword, userID)
 	if deferredErr != nil {
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.PasswordChanged), nil)
+	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.PasswordChanged))
 }
 
 func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -212,12 +219,12 @@ func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	deferredErr = handler.database.Update(db.UpdateUserStatus, false, userID)
+	deferredErr = handler.database.ExecQuery(db.UpdateUserStatus, false, userID)
 	if deferredErr != nil {
 		return
 	}
 
-	deferredErr = writeServerResponse(w, "", language.GetTranslation(languageID, language.AccountClose), nil)
+	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.AccountClose))
 }
 
 func (handler *Handler) AccountInformationHandler(w http.ResponseWriter, r *http.Request) {
@@ -246,11 +253,88 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
 
+	languageID := r.URL.Query().Get(languageParamID)
+	if !language.SupportedLanguage(languageID) {
+		deferredErr = errorLanguageID
+		return
+	}
+
+	var registerRequest types.User
+
+	deferredErr = readBody(r, &registerRequest)
+	if deferredErr != nil {
+		return
+	}
+
+	if strings.TrimSpace(registerRequest.FullName) == "" {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	if len(registerRequest.FullName) >= 45 {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	if strings.TrimSpace(registerRequest.Country) == "" {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	if len(registerRequest.Country) >= 25 {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	dateOfBirth, deferredErr := time.Parse(time.DateOnly, registerRequest.DoB)
+	if deferredErr != nil {
+		return
+	}
+
+	// only 16 year old's can open accounts
+	cutOffDate := time.Now().AddDate(-16, 0, 0)
+
+	if !cutOffDate.After(dateOfBirth) {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	if !newPasswordIsValid(strings.TrimSpace(registerRequest.Password)) {
+		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	_, deferredErr = mail.ParseAddress(registerRequest.Email)
+	if deferredErr != nil {
+		return
+	}
+
+	rows, deferredErr := handler.database.Query(db.GetUserLogin, registerRequest.Email)
+	if deferredErr != nil {
+		return
+	}
+
+	if rows.Next() {
+		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.AccountExisting))
+		return
+	}
+
+	// hashedPassword, deferredErr := auth.HashPassword(registerRequest.Password)
+	// if deferredErr != nil {
+	// 	return
+	// }
+
+	// add to db
+
+	// send email
+
+	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.AccountCreated))
 }
 
 func newPasswordIsValid(password string) bool {

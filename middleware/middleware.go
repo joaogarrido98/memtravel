@@ -13,11 +13,15 @@ import (
 	"memtravel/types"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-const AuthUserID types.ContextKey = "context.auth.userID"
+const (
+	AuthUserID       types.ContextKey = "context.auth.userID"
+	RequestContextID types.ContextKey = "context.request.id"
+)
 
 // CreateStack creates a middleware that executes all the passed middlewares
 func CreateStack(middleware ...types.Middleware) types.Middleware {
@@ -35,6 +39,10 @@ func LogMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
+		contextID := uuid.NewString()
+
+		r = r.WithContext(context.WithValue(r.Context(), RequestContextID, contextID))
+
 		wrapped := &types.WrappedWriter{
 			ResponseWriter: w,
 			StatusCode:     http.StatusOK,
@@ -42,12 +50,9 @@ func LogMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(wrapped, r)
 
-		if wrapped.StatusCode == http.StatusOK {
-			logger.Info("", "result", "200", "method", r.Method, "path", r.URL.Path, "duration", time.Since(start).String())
-			return
+		if wrapped.StatusCode != http.StatusOK {
+			logger.Error(contextID, "result", strconv.Itoa(wrapped.StatusCode), "method", r.Method, "path", r.URL.Path, "duration", time.Since(start).String())
 		}
-
-		logger.Error("", "result", strconv.Itoa(wrapped.StatusCode), "method", r.Method, "path", r.URL.Path, "duration", time.Since(start).String())
 	})
 }
 

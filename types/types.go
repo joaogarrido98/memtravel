@@ -32,6 +32,11 @@ type RecoverPasswordTemplate struct {
 	Password string
 }
 
+// WelcomeTemplate is the blueprint for the new user welcome email
+type WelcomeTemplate struct {
+	Link string
+}
+
 // Middleware is the blueprint for the handlerfunc
 type Middleware func(next http.HandlerFunc) http.HandlerFunc
 
@@ -49,3 +54,5 @@ func (w *WrappedWriter) WriteHeader(statusCode int) {
 
 // ContextKey is the blueprint for the request context
 type ContextKey string
+
+type Transaction map[string][]any

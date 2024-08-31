@@ -10,6 +10,7 @@ const (
 	AccountClose            = "AccountClose"
 	AccountCreated          = "AccountCreated"
 	AccountExisting         = "AccountExisting"
+	Welcome                 = "Welcome"
 )
 
 // All holds all language maps
@@ -28,6 +29,7 @@ var en = map[string]string{
 	AccountClose:            "We are sorry to see you leave.",
 	AccountCreated:          "Your new account has been created, before logging in, please verify your account through the email you have received.",
 	AccountExisting:         "Email is already in use",
+	Welcome:                 "Memtravel welcomes you",
 }
 
 var pt = map[string]string{
@@ -40,6 +42,7 @@ var pt = map[string]string{
 	AccountClose:            "Estamos tristes por fechar a conta.",
 	AccountCreated:          "A sua nova conta foi criada, antes the entrar, por favor verifique a sua conta usando o email que enviamos.",
 	AccountExisting:         "Email ja se encontra em uso.",
+	Welcome:                 "Bem-vindo a Memtravel",
 }
 
 // GetTranslation retrieves a translation for a specific language id

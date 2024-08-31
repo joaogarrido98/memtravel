@@ -106,7 +106,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	newPassword := createNewPassword()
+	newPassword := generateRandomString()
 
 	hashPassword, deferredErr := auth.HashPassword(newPassword)
 	if deferredErr != nil {
@@ -249,6 +249,47 @@ func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *
 
 }
 
+func (handler *Handler) ActivateAccountHandler(w http.ResponseWriter, r *http.Request) {
+	var deferredErr error
+	defer func() {
+		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			return
+		}
+	}()
+
+	code := r.PathValue(codeParamID)
+	if len(code) == 0 {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to activate account"))
+		return
+	}
+
+	var email string
+	var databaseCode string
+
+	rows := handler.database.QueryRow(db.GetActivationCode, code)
+	deferredErr = rows.Scan(&databaseCode, &email)
+	if deferredErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to activate account"))
+		return
+	}
+
+	deferredErr = handler.database.ExecTransaction(
+		types.Transaction{
+			db.RemoveActivationCode: {code, email},
+			db.ActivateUser:         {email},
+		},
+	)
+
+	if deferredErr != nil {
+		return
+	}
+
+	w.Write([]byte("\nAccount is now active. Happy Trips."))
+}
+
 func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
@@ -297,7 +338,6 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// only 16 year old's can open accounts
 	cutOffDate := time.Now().AddDate(-16, 0, 0)
 
 	if !cutOffDate.After(dateOfBirth) {
@@ -325,14 +365,36 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// hashedPassword, deferredErr := auth.HashPassword(registerRequest.Password)
-	// if deferredErr != nil {
-	// 	return
-	// }
+	hashedPassword, deferredErr := auth.HashPassword(registerRequest.Password)
+	if deferredErr != nil {
+		return
+	}
 
-	// add to db
+	activationCode := generateRandomString()
 
-	// send email
+	deferredErr = handler.database.ExecTransaction(
+		types.Transaction{
+			db.AddNewUser:        {registerRequest.Email, hashedPassword, registerRequest.FullName, registerRequest.DoB, registerRequest.Country},
+			db.AddActivationCode: {activationCode, registerRequest.Email},
+		},
+	)
+
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = sendEmail(
+		[]string{registerRequest.Email},
+		"./templates/welcome.gohtml",
+		language.GetTranslation(languageID, language.Welcome),
+		types.WelcomeTemplate{
+			Link: "http://localhost:8080/account/activate/" + activationCode, //TODO: CHANGE LINK TO BE REAL ONE
+		},
+	)
+
+	if deferredErr != nil {
+		return
+	}
 
 	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.AccountCreated))
 }
@@ -365,10 +427,10 @@ func newPasswordIsValid(password string) bool {
 	return hasLowerCase && hasUpperCase && hasNumber && hasSpecial
 }
 
-func createNewPassword() string {
+func generateRandomString() string {
 	var buf bytes.Buffer
 	for i := uint(0); i < 32; i++ {
-		buf.WriteByte(configs.Envs.PasswordCreation[rand.Intn(len(configs.Envs.PasswordCreation))])
+		buf.WriteByte(configs.Envs.RandomCreator[rand.Intn(len(configs.Envs.RandomCreator))])
 	}
 
 	return buf.String()

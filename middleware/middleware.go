@@ -51,7 +51,15 @@ func LogMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(wrapped, r)
 
 		if wrapped.StatusCode != http.StatusOK {
-			logger.Error(contextID, "result", strconv.Itoa(wrapped.StatusCode), "method", r.Method, "path", r.URL.Path, "duration", time.Since(start).String())
+			logger.Error(
+				contextID,
+				"result", strconv.Itoa(wrapped.StatusCode),
+				"method", r.Method,
+				"path", r.URL.Path,
+				"duration", time.Since(start).String(),
+				"host", r.Host,
+				"remoteAddress", r.RemoteAddr,
+			)
 		}
 	})
 }

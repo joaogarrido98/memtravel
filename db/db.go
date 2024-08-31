@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"memtravel/configs"
+	"memtravel/types"
 )
 
 type Database struct {
@@ -34,7 +35,7 @@ func DBConnect() (Database, error) {
 	return Database{database}, err
 }
 
-// ExecQuery executes a non-select query
+// ExecQuery executes a non-select query and checks for affected rows, if none, then return error
 func (database Database) ExecQuery(query string, data ...any) error {
 	result, err := database.Exec(query, data...)
 	if err != nil {
@@ -51,4 +52,23 @@ func (database Database) ExecQuery(query string, data ...any) error {
 	}
 
 	return nil
+}
+
+// ExecTransaction executes the given queries inside a transaction block, if any fail, roll all previous ones back
+// if they all pass, commit it
+func (database Database) ExecTransaction(queries types.Transaction) error {
+	tx, err := database.Begin()
+	if err != nil {
+		return err
+	}
+
+	for query, params := range queries {
+		_, err := tx.Exec(query, params...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

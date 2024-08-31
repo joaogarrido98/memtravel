@@ -15,6 +15,7 @@ import (
 const (
 	languageParamID string = "lid"
 	pathParamID     string = "id"
+	codeParamID     string = "code"
 )
 
 var (

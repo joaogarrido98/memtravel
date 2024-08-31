@@ -36,6 +36,7 @@ func main() {
 	http.HandleFunc("POST /account/close", authMiddleware(handler.CloseAccountHandler))
 	http.HandleFunc("GET /account/information/view/{id}", authMiddleware(handler.AccountInformationHandler))
 	http.HandleFunc("POST /account/information/edit", authMiddleware(handler.AccountInformationEditHandler))
+	http.HandleFunc("GET /account/activate/{code}", middleware.LogMiddleware(handler.ActivateAccountHandler))
 
 	// trips
 	http.HandleFunc("POST /trips/add", authMiddleware(handler.AddTripHandler))

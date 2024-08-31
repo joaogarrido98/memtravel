@@ -3,13 +3,25 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"memtravel/configs"
 	"memtravel/db"
 	"memtravel/types"
 	"net/http"
 	"net/smtp"
 	"text/template"
+)
+
+const (
+	languageParamID string = "lid"
+	pathParamID     string = "id"
+	codeParamID     string = "code"
+)
+
+var (
+	errorLanguageID         = errors.New("languageID is not supported")
+	errorPathValueNotFound  = errors.New("path value not found")
+	errorInvalidRequestData = errors.New("invalid request data")
 )
 
 // Handler object that holds all needed attributes for the handlers
@@ -26,7 +38,7 @@ func NewHandler(db db.Database) *Handler {
 
 func readBody(r *http.Request, into any) error {
 	if r.Body == nil {
-		return fmt.Errorf("request body cannot be empty")
+		return errors.New("request body cannot be empty")
 	}
 
 	err := json.NewDecoder(r.Body).Decode(into)
@@ -37,11 +49,10 @@ func readBody(r *http.Request, into any) error {
 	return nil
 }
 
-func writeServerResponse(w http.ResponseWriter, response, message string, data interface{}) error {
+func writeServerResponse(w http.ResponseWriter, status bool, data interface{}) error {
 	serverResponse := types.ServerResponse{
-		Response: response,
-		Message:  message,
-		Data:     data,
+		Status: status,
+		Data:   data,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

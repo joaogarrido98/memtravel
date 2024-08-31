@@ -8,46 +8,48 @@ import (
 	"strings"
 )
 
+// Config is the blueprint for the .env values
 type Config struct {
-	Port             string
-	DBUser           string
-	DBPassword       string
-	DBAddress        string
-	DBName           string
-	JWTSecret        string
-	JWTIssuer        string
-	EmailFrom        string
-	EmailPassword    string
-	SMTPHost         string
-	SMTPPort         string
-	PasswordCreation []byte
+	Port          string
+	DBUser        string
+	DBPassword    string
+	DBAddress     string
+	DBName        string
+	JWTSecret     string
+	JWTIssuer     string
+	EmailFrom     string
+	EmailPassword string
+	SMTPHost      string
+	SMTPPort      string
+	RandomCreator []byte
 }
 
+// Envs holds the .env values
 var Envs = initConfig()
 
 func initConfig() Config {
-	err := LoadEnv(".env")
+	err := loadEnv(".env")
 	if err != nil {
 		panic("Error loading .env file: " + err.Error())
 	}
 
 	return Config{
-		Port:             os.Getenv("PORT"),
-		DBUser:           os.Getenv("DB_USER"),
-		DBPassword:       os.Getenv("DB_PASSWORD"),
-		DBAddress:        fmt.Sprintf("%s:%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
-		DBName:           os.Getenv("DB_NAME"),
-		JWTSecret:        os.Getenv("JWT_SECRET"),
-		JWTIssuer:        os.Getenv("JWT_ISSUER"),
-		EmailFrom:        os.Getenv("EMAIL_FROM"),
-		EmailPassword:    os.Getenv("EMAIL_PASSWORD"),
-		SMTPHost:         os.Getenv("SMTP_HOST"),
-		SMTPPort:         os.Getenv("SMTP_PORT"),
-		PasswordCreation: []byte(os.Getenv("PASSWORD_CREATION")),
+		Port:          os.Getenv("PORT"),
+		DBUser:        os.Getenv("DB_USER"),
+		DBPassword:    os.Getenv("DB_PASSWORD"),
+		DBAddress:     fmt.Sprintf("%s:%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
+		DBName:        os.Getenv("DB_NAME"),
+		JWTSecret:     os.Getenv("JWT_SECRET"),
+		JWTIssuer:     os.Getenv("JWT_ISSUER"),
+		EmailFrom:     os.Getenv("EMAIL_FROM"),
+		EmailPassword: os.Getenv("EMAIL_PASSWORD"),
+		SMTPHost:      os.Getenv("SMTP_HOST"),
+		SMTPPort:      os.Getenv("SMTP_PORT"),
+		RandomCreator: []byte(os.Getenv("RANDOM_CREATOR")),
 	}
 }
 
-func LoadEnv(filename string) error {
+func loadEnv(filename string) error {
 	// open .env file
 	file, err := os.Open(filename)
 	if err != nil {

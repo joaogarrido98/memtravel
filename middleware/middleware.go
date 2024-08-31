@@ -2,36 +2,29 @@ package middleware
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"memtravel/auth"
+	"memtravel/types"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
-type ContextKey string
+var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 const (
-	AuthUserID ContextKey = "context.auth.userID"
+	AuthUserID       types.ContextKey = "context.auth.userID"
+	RequestContextID types.ContextKey = "context.request.id"
 )
 
-type Middleware func(next http.HandlerFunc) http.HandlerFunc
-
-type wrappedWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (w *wrappedWriter) WriteHeader(statusCode int) {
-	w.ResponseWriter.WriteHeader(statusCode)
-	w.statusCode = statusCode
-}
-
 // CreateStack creates a middleware that executes all the passed middlewares
-func CreateStack(middleware ...Middleware) Middleware {
+func CreateStack(middleware ...types.Middleware) types.Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		for i := len(middleware) - 1; i >= 0; i-- {
 			next = middleware[i](next)
@@ -46,14 +39,28 @@ func LogMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		wrapped := &wrappedWriter{
+		contextID := uuid.NewString()
+
+		r = r.WithContext(context.WithValue(r.Context(), RequestContextID, contextID))
+
+		wrapped := &types.WrappedWriter{
 			ResponseWriter: w,
-			statusCode:     http.StatusOK,
+			StatusCode:     http.StatusOK,
 		}
 
 		next.ServeHTTP(wrapped, r)
 
-		log.Printf("result: [%d] method: [%s], path: [%s] duration: [%s]", wrapped.statusCode, r.Method, r.URL.Path, time.Since(start).String())
+		if wrapped.StatusCode != http.StatusOK {
+			logger.Error(
+				contextID,
+				"result", strconv.Itoa(wrapped.StatusCode),
+				"method", r.Method,
+				"path", r.URL.Path,
+				"duration", time.Since(start).String(),
+				"host", r.Host,
+				"remoteAddress", r.RemoteAddr,
+			)
+		}
 	})
 }
 

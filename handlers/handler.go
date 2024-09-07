@@ -12,10 +12,24 @@ import (
 )
 
 type (
+	// User is the blueprint for the user data
+	User struct {
+		UserID         string  `json:"userid"`
+		FullName       string  `json:"fullname"`
+		Email          string  `json:"email,omitempty"`
+		Password       string  `json:"password,omitempty"`
+		DoB            string  `json:"dob,omitempty"`
+		Bio            *string `json:"bio,omitempty"`
+		Country        string  `json:"country,omitempty"` // where the user is originally from
+		Active         bool    `json:"active,omitempty"`
+		AccountCreated bool    `json:"accountcreated,omitempty"`
+		ProfilePic     *string `json:"profilepic,omitempty"`
+	}
+
 	// ServerResponse holds the generic type for all responses in
 	ServerResponse struct {
 		Status bool        `json:"st"`
-		Data   interface{} `json:"dt,omitempty"`
+		Data   interface{} `json:"dt"`
 	}
 
 	// Handler object that holds all needed attributes for the handlers

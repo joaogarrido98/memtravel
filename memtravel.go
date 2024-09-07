@@ -35,15 +35,16 @@ func main() {
 	http.HandleFunc("POST /account/password/change", authMiddleware(handler.PasswordChangeHandler))
 	http.HandleFunc("POST /account/close", authMiddleware(handler.CloseAccountHandler))
 	http.HandleFunc("GET /account/activate/{code}", middleware.LogMiddleware(handler.ActivateAccountHandler))
-	http.HandleFunc("GET /account/information/view/{id}", authMiddleware(handler.AccountInformationHandler))
-	http.HandleFunc("POST /account/information/edit", authMiddleware(handler.AccountInformationEditHandler))
 
 	// friends deals with anything that is part of the social interaction
 	http.HandleFunc("POST /friends/request/{type}", authMiddleware(handler.FriendRequestHandler))
 	http.HandleFunc("POST /friends/remove", authMiddleware(handler.RemoveFriendHandler))
 	http.HandleFunc("GET /friends/all", authMiddleware(handler.GetFriendsHandler))
-	http.HandleFunc("GET /friends/get/{id}", authMiddleware(handler.GetFriendHandler))
+
+	// TODO
 	http.HandleFunc("GET /friends/search", authMiddleware(handler.SearchFriendsHandler))
+	http.HandleFunc("GET /users/account/view", authMiddleware(handler.AccountInformationHandler))
+	http.HandleFunc("POST /users/account/edit", authMiddleware(handler.AccountInformationEditHandler))
 
 	// trips deals with anything that is related with the trips
 	http.HandleFunc("POST /trips/add", authMiddleware(handler.AddTripHandler))
@@ -51,6 +52,7 @@ func main() {
 	http.HandleFunc("GET /trips/previous", authMiddleware(handler.GetPreviousTripsHandler))
 	http.HandleFunc("POST /trips/edit/{id}", authMiddleware(handler.EditTripHandler))
 	http.HandleFunc("POST /trips/remove/{id}", authMiddleware(handler.RemoveTripHandler))
+	http.HandleFunc("GET /trips/stats", authMiddleware(handler.RemoveTripHandler))
 
 	// favourites
 	http.HandleFunc("POST /favourites/add", authMiddleware(handler.AddFavouritesHandler))
@@ -60,7 +62,7 @@ func main() {
 	http.HandleFunc("POST /ratings/add", authMiddleware(handler.AddRatingHandler))
 
 	// organise
-	// http.HandleFunc("POST /organise/request", authMiddleware(handler.FriendRequestHandler))
+	http.HandleFunc("POST /organise/request", authMiddleware(handler.FriendRequestHandler))
 
 	server := &http.Server{
 		Addr:         configs.Envs.Port,

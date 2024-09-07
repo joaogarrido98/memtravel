@@ -18,18 +18,6 @@ import (
 )
 
 type (
-	// User is the blueprint for the user data
-	User struct {
-		UserID   string `json:"id,omitempty"`
-		FullName string `json:"fullname,omitempty"`
-		Email    string `json:"email,omitempty"`
-		Password string `json:"password,omitempty"`
-		DoB      string `json:"dob,omitempty"`
-		Country  string `json:"country,omitempty"` // where the user is originally from
-		Active   bool   `json:"active,omitempty"`
-		Picture  string `json:"picture,omitempty"`
-	}
-
 	// ChangePassword is the blueprint for the change password request
 	ChangePassword struct {
 		OldPassword string `json:"op,omitempty"`
@@ -81,9 +69,9 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var userData User
 
-	rows := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
+	row := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
 
-	deferredErr = rows.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active)
+	deferredErr = row.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active)
 	if deferredErr != nil {
 		return
 	}
@@ -212,9 +200,9 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 
 	var userData User
 
-	rows := handler.database.QueryRow(db.GetPasswordDetails, userID)
+	row := handler.database.QueryRow(db.GetPasswordDetails, userID)
 
-	deferredErr = rows.Scan(&userData.UserID, &userData.Password)
+	deferredErr = row.Scan(&userData.UserID, &userData.Password)
 	if deferredErr != nil {
 		return
 	}
@@ -330,8 +318,8 @@ func (handler *Handler) ActivateAccountHandler(w http.ResponseWriter, r *http.Re
 	var email string
 	var databaseCode string
 
-	rows := handler.database.QueryRow(db.GetActivationCode, code)
-	deferredErr = rows.Scan(&databaseCode, &email)
+	row := handler.database.QueryRow(db.GetActivationCode, code)
+	deferredErr = row.Scan(&databaseCode, &email)
 	if deferredErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Failed to activate account"))

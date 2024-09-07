@@ -60,22 +60,25 @@ func (handler *Handler) FriendRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	switch requestType {
 	case addNewFriendRequest:
-		rows := handler.database.QueryRow(db.GetUsersSpecificFriend, userID, friendID)
+		row := handler.database.QueryRow(db.CheckIfUserHasSpecificFriend, userID, friendID)
 
 		var exists int
-		rows.Scan(&exists)
+		deferredErr = row.Scan(&exists)
+		if deferredErr != nil {
+			return
+		}
 
 		if exists == 0 {
 			deferredErr = handler.database.ExecQuery(db.AddFriendRequest, userID, friendID)
 			break
 		}
 
-		if rows.Err() != nil {
-			deferredErr = rows.Err()
+		if row.Err() != nil {
+			deferredErr = row.Err()
 			return
 		}
 
-		deferredErr = fmt.Errorf("%s is already a friend", friendParam)
+		deferredErr = fmt.Errorf("%s is already an existing friend", friendParam)
 	case acceptFriendRequest:
 		deferredErr = handler.database.ExecTransaction(db.Transaction{
 			db.RemoveFromFriendsRequest: {friendID, userID},
@@ -108,6 +111,20 @@ func (handler *Handler) RemoveFriendHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}()
 
+	userID := r.Context().Value(middleware.AuthUserID)
+
+	friendParam := r.URL.Query().Get(friendParamID)
+	friendID, deferredErr := strconv.Atoi(friendParam)
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = handler.database.ExecQuery(db.RemoveFriend, userID, friendID)
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = writeServerResponse(w, true, "")
 }
 
 func (handler *Handler) GetFriendsHandler(w http.ResponseWriter, r *http.Request) {
@@ -124,22 +141,34 @@ func (handler *Handler) GetFriendsHandler(w http.ResponseWriter, r *http.Request
 		}
 	}()
 
-}
+	userID := r.Context().Value(middleware.AuthUserID)
 
-func (handler *Handler) GetFriendHandler(w http.ResponseWriter, r *http.Request) {
-	var deferredErr error
-	defer func() {
+	var friends []User
+
+	rows, deferredErr := handler.database.Query(db.GetAllFriends, userID)
+	if deferredErr != nil {
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var friend User
+
+		deferredErr = rows.Scan(&friend.UserID, &friend.FullName, &friend.ProfilePic)
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
-				deferredErr.Error(),
-				r.Context().Value(middleware.RequestContextID),
-				r.Context().Value(middleware.AuthUserID),
-			)
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-	}()
 
+		friends = append(friends, friend)
+	}
+
+	deferredErr = rows.Err()
+	if deferredErr != nil {
+		return
+	}
+
+	deferredErr = writeServerResponse(w, true, friends)
 }
 
 func (handler *Handler) SearchFriendsHandler(w http.ResponseWriter, r *http.Request) {

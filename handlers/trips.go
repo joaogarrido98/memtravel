@@ -62,7 +62,7 @@ func (handler *Handler) RemoveTripHandler(w http.ResponseWriter, r *http.Request
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID), r.Context().Value(middleware.AuthUserID))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

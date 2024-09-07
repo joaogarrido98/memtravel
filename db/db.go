@@ -7,12 +7,17 @@ import (
 	_ "github.com/lib/pq"
 
 	"memtravel/configs"
-	"memtravel/types"
 )
 
-type Database struct {
-	*sql.DB
-}
+type (
+	// Transaction is the type of sql transactions to be executed
+	Transaction map[string][]any
+
+	// Database is the blueprint for the db
+	Database struct {
+		*sql.DB
+	}
+)
 
 // DBConnect init the database connection
 func DBConnect() (Database, error) {
@@ -56,7 +61,7 @@ func (database Database) ExecQuery(query string, data ...any) error {
 
 // ExecTransaction executes the given queries inside a transaction block, if any fail, roll all previous ones back
 // if they all pass, commit it
-func (database Database) ExecTransaction(queries types.Transaction) error {
+func (database Database) ExecTransaction(queries Transaction) error {
 	tx, err := database.Begin()
 	if err != nil {
 		return err

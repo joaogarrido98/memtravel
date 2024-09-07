@@ -6,16 +6,30 @@ import (
 	"errors"
 	"memtravel/configs"
 	"memtravel/db"
-	"memtravel/types"
 	"net/http"
 	"net/smtp"
 	"text/template"
 )
 
+type (
+	// ServerResponse holds the generic type for all responses in
+	ServerResponse struct {
+		Status bool        `json:"st"`
+		Data   interface{} `json:"dt,omitempty"`
+	}
+
+	// Handler object that holds all needed attributes for the handlers
+	Handler struct {
+		database db.Database
+	}
+)
+
 const (
-	languageParamID string = "lid"
-	pathParamID     string = "id"
-	codeParamID     string = "code"
+	languageParamID      string = "lid"
+	pathParamID          string = "id"
+	codeParamID          string = "code"
+	friendRequestParamID string = "type"
+	friendParamID        string = "friend"
 )
 
 var (
@@ -23,11 +37,6 @@ var (
 	errorPathValueNotFound  = errors.New("path value not found")
 	errorInvalidRequestData = errors.New("invalid request data")
 )
-
-// Handler object that holds all needed attributes for the handlers
-type Handler struct {
-	database db.Database
-}
 
 // NewHandler creates a new object
 func NewHandler(db db.Database) *Handler {
@@ -50,7 +59,7 @@ func readBody(r *http.Request, into any) error {
 }
 
 func writeServerResponse(w http.ResponseWriter, status bool, data interface{}) error {
-	serverResponse := types.ServerResponse{
+	serverResponse := ServerResponse{
 		Status: status,
 		Data:   data,
 	}

@@ -10,21 +10,40 @@ import (
 	"time"
 
 	"memtravel/auth"
-	"memtravel/types"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
+type (
+	// Middleware is the blueprint for the handlerfunc
+	Middleware func(next http.HandlerFunc) http.HandlerFunc
+
+	// ContextKey is the blueprint for the request context
+	ContextKey string
+
+	// WrappedWriter extends the http.ResponseWriter
+	WrappedWriter struct {
+		http.ResponseWriter
+		StatusCode int
+	}
+)
+
+// WriteHeader is an extension of the http.ResponseWriter WriteHeader
+func (w *WrappedWriter) WriteHeader(statusCode int) {
+	w.ResponseWriter.WriteHeader(statusCode)
+	w.StatusCode = statusCode
+}
+
 var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 const (
-	AuthUserID       types.ContextKey = "context.auth.userID"
-	RequestContextID types.ContextKey = "context.request.id"
+	AuthUserID       ContextKey = "context.auth.userID"
+	RequestContextID ContextKey = "context.request.id"
 )
 
 // CreateStack creates a middleware that executes all the passed middlewares
-func CreateStack(middleware ...types.Middleware) types.Middleware {
+func CreateStack(middleware ...Middleware) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		for i := len(middleware) - 1; i >= 0; i-- {
 			next = middleware[i](next)
@@ -43,7 +62,7 @@ func LogMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		r = r.WithContext(context.WithValue(r.Context(), RequestContextID, contextID))
 
-		wrapped := &types.WrappedWriter{
+		wrapped := &WrappedWriter{
 			ResponseWriter: w,
 			StatusCode:     http.StatusOK,
 		}

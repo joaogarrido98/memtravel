@@ -15,20 +15,53 @@ import (
 	"memtravel/db"
 	"memtravel/language"
 	"memtravel/middleware"
-	"memtravel/types"
+)
+
+type (
+	// User is the blueprint for the user data
+	User struct {
+		UserID   string `json:"id,omitempty"`
+		FullName string `json:"fullname,omitempty"`
+		Email    string `json:"email,omitempty"`
+		Password string `json:"password,omitempty"`
+		DoB      string `json:"dob,omitempty"`
+		Country  string `json:"country,omitempty"` // where the user is originally from
+		Active   bool   `json:"active,omitempty"`
+		Picture  string `json:"picture,omitempty"`
+	}
+
+	// ChangePassword is the blueprint for the change password request
+	ChangePassword struct {
+		OldPassword string `json:"op,omitempty"`
+		NewPassword string `json:"np,omitempty"`
+	}
+
+	// WelcomeTemplate is the blueprint for the new user welcome email
+	WelcomeTemplate struct {
+		Link string
+	}
+
+	// RecoverPasswordTemplate is the blueprint for the reset password email
+	RecoverPasswordTemplate struct {
+		Password string
+	}
 )
 
 func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
 
-	var loginRequest types.User
+	var loginRequest User
 
 	deferredErr = readBody(r, &loginRequest)
 	if deferredErr != nil {
@@ -46,7 +79,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userData types.User
+	var userData User
 
 	rows := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
 
@@ -82,7 +115,11 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -94,7 +131,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var recoverPasswordRequest types.User
+	var recoverPasswordRequest User
 
 	deferredErr = readBody(r, &recoverPasswordRequest)
 	if deferredErr != nil {
@@ -122,7 +159,7 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 		[]string{recoverPasswordRequest.Email},
 		"./templates/recover.gohtml",
 		language.GetTranslation(languageID, language.PasswordRecover),
-		types.RecoverPasswordTemplate{
+		RecoverPasswordTemplate{
 			Password: newPassword,
 		},
 	)
@@ -138,7 +175,11 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -146,7 +187,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 
 	userID := r.Context().Value(middleware.AuthUserID)
 
-	var passwordChangeRequest types.ChangePassword
+	var passwordChangeRequest ChangePassword
 
 	deferredErr = readBody(r, &passwordChangeRequest)
 	if deferredErr != nil {
@@ -169,7 +210,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var userData types.User
+	var userData User
 
 	rows := handler.database.QueryRow(db.GetPasswordDetails, userID)
 
@@ -205,7 +246,11 @@ func (handler *Handler) CloseAccountHandler(w http.ResponseWriter, r *http.Reque
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -231,29 +276,46 @@ func (handler *Handler) AccountInformationHandler(w http.ResponseWriter, r *http
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
 
+	// TODO
 }
 
 func (handler *Handler) AccountInformationEditHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
 
+	// TODO
 }
 
 func (handler *Handler) ActivateAccountHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}()
@@ -277,7 +339,7 @@ func (handler *Handler) ActivateAccountHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	deferredErr = handler.database.ExecTransaction(
-		types.Transaction{
+		db.Transaction{
 			db.RemoveActivationCode: {code, email},
 			db.ActivateUser:         {email},
 		},
@@ -294,7 +356,11 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	var deferredErr error
 	defer func() {
 		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s]", deferredErr.Error(), r.Context().Value(middleware.RequestContextID))
+			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
+				deferredErr.Error(),
+				r.Context().Value(middleware.RequestContextID),
+				r.Context().Value(middleware.AuthUserID),
+			)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -306,7 +372,7 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var registerRequest types.User
+	var registerRequest User
 
 	deferredErr = readBody(r, &registerRequest)
 	if deferredErr != nil {
@@ -373,7 +439,7 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	activationCode := generateRandomString()
 
 	deferredErr = handler.database.ExecTransaction(
-		types.Transaction{
+		db.Transaction{
 			db.AddNewUser:        {registerRequest.Email, hashedPassword, registerRequest.FullName, registerRequest.DoB, registerRequest.Country},
 			db.AddActivationCode: {activationCode, registerRequest.Email},
 		},
@@ -387,7 +453,7 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		[]string{registerRequest.Email},
 		"./templates/welcome.gohtml",
 		language.GetTranslation(languageID, language.Welcome),
-		types.WelcomeTemplate{
+		WelcomeTemplate{
 			Link: "http://localhost:8080/account/activate/" + activationCode, //TODO: CHANGE LINK TO BE REAL ONE
 		},
 	)

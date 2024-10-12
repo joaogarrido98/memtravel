@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"memtravel/configs"
-	"memtravel/db"
+	"html/template"
 	"net/http"
 	"net/smtp"
-	"text/template"
+
+	"memtravel/configs"
+	"memtravel/db"
 )
 
 type (
@@ -20,8 +21,9 @@ type (
 		Password       string  `json:"password,omitempty"`
 		DoB            string  `json:"dob,omitempty"`
 		Bio            *string `json:"bio,omitempty"`
-		Country        string  `json:"country,omitempty"` // where the user is originally from
+		Country        int     `json:"country,omitempty"` // where the user is originally from
 		Active         bool    `json:"active,omitempty"`
+		LoginAttempt   int     `json:"loginattempt,omitempty"`
 		AccountCreated bool    `json:"accountcreated,omitempty"`
 		ProfilePic     *string `json:"profilepic,omitempty"`
 	}
@@ -35,6 +37,7 @@ type (
 	// Handler object that holds all needed attributes for the handlers
 	Handler struct {
 		database db.Database
+		tmpl     *template.Template
 	}
 )
 
@@ -44,6 +47,8 @@ const (
 	codeParamID          string = "code"
 	friendRequestParamID string = "type"
 	friendParamID        string = "friend"
+	privacyParamID       string = "pid"
+	tripParamID          string = "tpid"
 )
 
 var (
@@ -53,9 +58,10 @@ var (
 )
 
 // NewHandler creates a new object
-func NewHandler(db db.Database) *Handler {
+func NewHandler(db db.Database, tmpl *template.Template) *Handler {
 	return &Handler{
 		database: db,
+		tmpl:     tmpl,
 	}
 }
 
@@ -82,24 +88,17 @@ func writeServerResponse(w http.ResponseWriter, status bool, data interface{}) e
 	return json.NewEncoder(w).Encode(serverResponse)
 }
 
-func sendEmail(sendTo []string, emailType string, subject string, context any) error {
+func sendEmail(sendTo []string, emailType string, subject string, context any, t *template.Template) error {
 	auth := smtp.PlainAuth("", configs.Envs.EmailFrom, configs.Envs.EmailPassword, configs.Envs.SMTPHost)
 
-	t, err := template.ParseFiles(emailType)
-	if err != nil {
-		return err
-	}
-
 	var body bytes.Buffer
-
 	mimeHeaders := "\nMIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-
-	_, err = body.Write([]byte("Subject: " + subject + mimeHeaders))
+	_, err := body.Write([]byte("Subject: " + subject + mimeHeaders))
 	if err != nil {
 		return err
 	}
 
-	err = t.Execute(&body, context)
+	err = t.ExecuteTemplate(&body, emailType, context)
 	if err != nil {
 		return err
 	}

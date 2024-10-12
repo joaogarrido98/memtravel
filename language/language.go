@@ -2,6 +2,7 @@ package language
 
 const (
 	PasswordInvalid         = "PasswordInvalid"
+	BlockedLogin            = "BlockedLogin"
 	InactiveUser            = "InactiveUser"
 	PasswordChanged         = "PasswordChanged"
 	ChagePasswordInvalid    = "ChangePasswordInvalid"
@@ -30,6 +31,7 @@ var en = map[string]string{
 	AccountCreated:          "Your new account has been created, before logging in, please verify your account through the email you have received.",
 	AccountExisting:         "Email is already in use",
 	Welcome:                 "Memtravel welcomes you",
+	BlockedLogin:            "Your account is currently locked",
 }
 
 var pt = map[string]string{
@@ -43,6 +45,7 @@ var pt = map[string]string{
 	AccountCreated:          "A sua nova conta foi criada, antes the entrar, por favor verifique a sua conta usando o email que enviamos.",
 	AccountExisting:         "Email ja se encontra em uso.",
 	Welcome:                 "Bem-vindo a Memtravel",
+	BlockedLogin:            "A sua conta está bloqueada",
 }
 
 // GetTranslation retrieves a translation for a specific language id

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -60,30 +61,30 @@ func (handler *Handler) FriendRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	switch requestType {
 	case addNewFriendRequest:
-		row := handler.database.QueryRow(db.CheckIfUserHasSpecificFriend, userID, friendID)
-
-		var exists int
-		deferredErr = row.Scan(&exists)
+		var row *sql.Rows
+		row, deferredErr = handler.database.Query(db.CheckIfUserHasFriend, userID, friendID)
 		if deferredErr != nil {
 			return
 		}
 
-		if exists == 0 {
-			deferredErr = handler.database.ExecQuery(db.AddFriendRequest, userID, friendID)
-			break
-		}
-
-		if row.Err() != nil {
-			deferredErr = row.Err()
+		if row.Next() {
+			deferredErr = fmt.Errorf("%s is already an existing friend", friendParam)
 			return
 		}
 
-		deferredErr = fmt.Errorf("%s is already an existing friend", friendParam)
+		deferredErr = handler.database.ExecQuery(db.AddFriendRequest, userID, friendID)
 	case acceptFriendRequest:
-		deferredErr = handler.database.ExecTransaction(db.Transaction{
-			db.RemoveFromFriendsRequest: {friendID, userID},
-			db.AddNewFriend:             {friendID, userID},
-		})
+		deferredErr = handler.database.ExecTransaction(
+			[]db.Transaction{
+				{
+					Query:  db.RemoveFromFriendsRequest,
+					Params: []any{friendID, userID},
+				},
+				{
+					Query:  db.AddNewFriend,
+					Params: []any{friendID, userID},
+				},
+			})
 	case declineFriendRequest:
 		deferredErr = handler.database.ExecQuery(db.DeclineFriendRequest, friendID, userID)
 	case removeFriendRequest:
@@ -169,20 +170,4 @@ func (handler *Handler) GetFriendsHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	deferredErr = writeServerResponse(w, true, friends)
-}
-
-func (handler *Handler) SearchFriendsHandler(w http.ResponseWriter, r *http.Request) {
-	var deferredErr error
-	defer func() {
-		if deferredErr != nil {
-			log.Printf("Error: [%s], context_id: [%s], user_id: [%s]",
-				deferredErr.Error(),
-				r.Context().Value(middleware.RequestContextID),
-				r.Context().Value(middleware.AuthUserID),
-			)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}()
-
 }

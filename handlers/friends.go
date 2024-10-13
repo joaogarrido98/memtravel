@@ -156,7 +156,7 @@ func (handler *Handler) GetFriendsHandler(w http.ResponseWriter, r *http.Request
 	for rows.Next() {
 		var friend User
 
-		deferredErr = rows.Scan(&friend.UserID, &friend.FullName, &friend.ProfilePic)
+		deferredErr = rows.Scan(&friend.UserID, &friend.FullName, &friend.ProfilePicture)
 		if deferredErr != nil {
 			return
 		}

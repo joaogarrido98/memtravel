@@ -7,21 +7,6 @@ import (
 )
 
 type (
-	UserPage struct {
-		UserID         int          `json:"userid"`
-		IsPrivate      bool         `json:"isPrivate"`
-		IsFriend       bool         `json:"isFriend"`
-		Name           string       `json:"name"`
-		ProfilePicture string       `json:"profilepic"`
-		Country        string       `json:"country"` // This can be many...
-		FriendsSince   string       `json:"friendsSince,omitempty"`
-		MemberSince    string       `json:"memberSince"`
-		TotalFriends   int          `json:"totalFriends"`
-		Bio            string       `json:"bio"`
-		PinnedTrips    []PinnedTrip `json:"pinned,omitempty"`
-		Stats          []Stats      `json:"stats,omitempty"`
-	}
-
 	PinnedTrip struct {
 		TripID    int
 		Cover     string

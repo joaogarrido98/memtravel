@@ -15,17 +15,23 @@ import (
 type (
 	// User is the blueprint for the user data
 	User struct {
-		UserID         string  `json:"userid"`
-		FullName       string  `json:"fullname"`
-		Email          string  `json:"email,omitempty"`
-		Password       string  `json:"password,omitempty"`
-		DoB            string  `json:"dob,omitempty"`
-		Bio            *string `json:"bio,omitempty"`
-		Country        int     `json:"country,omitempty"` // where the user is originally from
-		Active         bool    `json:"active,omitempty"`
-		LoginAttempt   int     `json:"loginattempt,omitempty"`
-		AccountCreated bool    `json:"accountcreated,omitempty"`
-		ProfilePic     *string `json:"profilepic,omitempty"`
+		UserID         int          `json:"userid,omitempty"`
+		Email          string       `json:"email,omitempty"`
+		Password       string       `json:"password,omitempty"`
+		Active         bool         `json:"active,omitempty"`
+		DoB            string       `json:"dob,omitempty"`
+		IsPrivate      bool         `json:"isPrivate,omitempty"`
+		IsFriend       bool         `json:"isFriend,omitempty"`
+		FullName       string       `json:"fullname,omitempty"`
+		ProfilePicture string       `json:"profilepic,omitempty"`
+		Country        string       `json:"country,omitempty"`
+		FriendsSince   string       `json:"friendsSince,omitempty"`
+		TotalFriends   int          `json:"totalFriends,omitempty"`
+		Bio            string       `json:"bio,omitempty"`
+		PinnedTrips    []PinnedTrip `json:"pinned,omitempty"`
+		Stats          []Stats      `json:"stats,omitempty"`
+		LoginAttempt   int          `json:"loginattempt,omitempty"`
+		AccountCreated bool         `json:"accountcreated,omitempty"`
 	}
 
 	// ServerResponse holds the generic type for all responses in

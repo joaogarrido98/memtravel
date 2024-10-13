@@ -16,6 +16,7 @@ const (
 	// Password
 	UpdateUserPassword = "UPDATE users SET password=$1 WHERE email=$2"
 	GetPasswordDetails = "SELECT userid, password FROM Users WHERE userid=$1"
+	EmailExists        = "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)"
 	UpdatePassword     = "UPDATE users SET password=$1 WHERE userid=$2"
 
 	// User Status

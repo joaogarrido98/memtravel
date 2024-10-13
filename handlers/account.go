@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
@@ -73,7 +74,12 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	row := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
 
 	deferredErr = row.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active, &userData.LoginAttempt)
-	if deferredErr != nil {
+	if deferredErr != nil && deferredErr != sql.ErrNoRows {
+		return
+	}
+
+	if deferredErr != nil && deferredErr == sql.ErrNoRows {
+		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.AccountNotExisting))
 		return
 	}
 
@@ -107,7 +113,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, deferredErr := auth.CreateToken(userData.UserID)
+	token, deferredErr := auth.CreateToken(strconv.Itoa(userData.UserID))
 	if deferredErr != nil {
 		return
 	}
@@ -143,6 +149,17 @@ func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Re
 
 	if recoverPasswordRequest.Email == "" {
 		deferredErr = errorInvalidRequestData
+		return
+	}
+
+	var emailExists bool
+	deferredErr = handler.database.QueryRow(db.EmailExists, recoverPasswordRequest.Email).Scan(&emailExists)
+	if deferredErr != nil {
+		return
+	}
+
+	if !emailExists {
+		deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.PasswordRecoverySuccess))
 		return
 	}
 

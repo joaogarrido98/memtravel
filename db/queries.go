@@ -45,4 +45,7 @@ const (
 
 	// Trips
 	RemoveTrip = "DELETE FROM trips WHERE id=$1 AND userid=$2"
+
+	// Countries
+	GetAllCountries = "SELECT id, iso, %s FROM countries"
 )

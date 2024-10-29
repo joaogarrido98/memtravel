@@ -13,10 +13,10 @@ import (
 	"memtravel/middleware"
 )
 
-//go:embed templates/*.html
-var templatesFS embed.FS
+//go:embed templates/*.html static/*.html
+var fs embed.FS
 
-var templates = template.Must(template.ParseFS(templatesFS, "templates/*.html"))
+var templates = template.Must(template.ParseFS(fs, "templates/*.html"))
 
 func main() {
 	// open a connection to the database
@@ -71,6 +71,14 @@ func main() {
 
 	// organise
 	http.HandleFunc("POST /organise/request", authMiddleware(handler.FriendRequestHandler))
+
+	// country
+	http.HandleFunc("GET /country/all", authMiddleware(handler.GetAllCountries))
+
+	// legal
+	http.HandleFunc("GET /legal/termsandconditions", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/termsandconditions.html")
+	})
 
 	server := &http.Server{
 		Addr:         configs.Envs.Port,

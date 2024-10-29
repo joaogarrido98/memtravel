@@ -23,8 +23,8 @@ import (
 type (
 	// ChangePassword is the blueprint for the change password request
 	ChangePassword struct {
-		OldPassword string `json:"op,omitempty"`
-		NewPassword string `json:"np,omitempty"`
+		OldPassword string `json:"op"`
+		NewPassword string `json:"np"`
 	}
 
 	// WelcomeTemplate is the blueprint for the new user welcome email
@@ -260,7 +260,7 @@ func (handler *Handler) PasswordChangeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	deferredErr = writeServerResponse(w, true, language.GetTranslation(languageID, language.PasswordChanged))
+	deferredErr = writeServerResponse(w, true, "")
 }
 
 func (handler *Handler) PrivacyStatusHandler(w http.ResponseWriter, r *http.Request) {

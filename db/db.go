@@ -11,7 +11,10 @@ import (
 
 type (
 	// Transaction is the type of sql transactions to be executed
-	Transaction map[string][]any
+	Transaction struct {
+		Query  string
+		Params []any
+	}
 
 	// Database is the blueprint for the db
 	Database struct {
@@ -61,16 +64,19 @@ func (database Database) ExecQuery(query string, data ...any) error {
 
 // ExecTransaction executes the given queries inside a transaction block, if any fail, roll all previous ones back
 // if they all pass, commit it
-func (database Database) ExecTransaction(queries Transaction) error {
+func (database Database) ExecTransaction(transactions []Transaction) error {
 	tx, err := database.Begin()
 	if err != nil {
 		return err
 	}
 
-	for query, params := range queries {
-		_, err := tx.Exec(query, params...)
+	for _, params := range transactions {
+		_, err := tx.Exec(params.Query, params.Params...)
 		if err != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return err
 		}
 	}

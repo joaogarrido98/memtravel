@@ -17,6 +17,7 @@ type (
 	User struct {
 		UserID         int          `json:"userid,omitempty"`
 		Email          string       `json:"email,omitempty"`
+		Token          string       `json:"token,omitempty"`
 		Password       string       `json:"password,omitempty"`
 		Active         bool         `json:"active,omitempty"`
 		DoB            string       `json:"dob,omitempty"`
@@ -24,7 +25,7 @@ type (
 		IsFriend       bool         `json:"isFriend,omitempty"`
 		FullName       string       `json:"fullname,omitempty"`
 		ProfilePicture string       `json:"profilepic,omitempty"`
-		Country        string       `json:"country,omitempty"`
+		Country        int          `json:"country,omitempty"`
 		FriendsSince   string       `json:"friendsSince,omitempty"`
 		TotalFriends   int          `json:"totalFriends,omitempty"`
 		Bio            string       `json:"bio,omitempty"`
@@ -34,7 +35,7 @@ type (
 		AccountCreated bool         `json:"accountcreated,omitempty"`
 	}
 
-	// ServerResponse holds the generic type for all responses in
+	// ServerResponse holds the generic type for all responses in the api
 	ServerResponse struct {
 		Status bool        `json:"st"`
 		Data   interface{} `json:"dt"`

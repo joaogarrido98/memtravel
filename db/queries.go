@@ -9,7 +9,7 @@ const (
 	GetUserAccount    = "SELECT userid, email, password, active FROM users WHERE email=$1"
 
 	// Login
-	GetUserLogin       = "SELECT u.userid, u.email, u.password, u.active, uc.loginattempt FROM users u JOIN usercounters uc ON u.userid = uc.userid WHERE u.email=$1"
+	GetUserLogin       = "SELECT u.userid, u.email, u.password, u.active, uc.loginattempt, u.fullname FROM users u JOIN usercounters uc ON u.userid = uc.userid WHERE u.email=$1"
 	UpdateLoginCounter = "Update usercounters SET loginattempt = loginattempt + 1 WHERE userid = $1"
 	ResetLoginCounter  = "Update usercounters SET loginattempt = 0 WHERE userid = $1"
 

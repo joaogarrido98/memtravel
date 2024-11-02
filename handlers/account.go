@@ -73,7 +73,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	row := handler.database.QueryRow(db.GetUserLogin, loginRequest.Email)
 
-	deferredErr = row.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active, &userData.LoginAttempt)
+	deferredErr = row.Scan(&userData.UserID, &userData.Email, &userData.Password, &userData.Active, &userData.LoginAttempt, &userData.FullName)
 	if deferredErr != nil && deferredErr != sql.ErrNoRows {
 		return
 	}
@@ -118,7 +118,7 @@ func (handler *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deferredErr = writeServerResponse(w, true, token)
+	deferredErr = writeServerResponse(w, true, User{Token: token, FullName: userData.FullName})
 }
 
 func (handler *Handler) PasswordRecoverHandler(w http.ResponseWriter, r *http.Request) {

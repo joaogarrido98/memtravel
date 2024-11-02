@@ -11,21 +11,21 @@ type CacheEntry struct {
 	Expiration int64
 }
 
-// SimpleCache is a basic in-memory cache
-type SimpleCache struct {
+// Cache is a basic in-memory cache
+type Cache struct {
 	mu    sync.RWMutex
 	store map[string]CacheEntry
 }
 
-// NewSimpleCache creates a new instance of SimpleCache
-func NewSimpleCache() *SimpleCache {
-	return &SimpleCache{
+// NewCache creates a new instance of Cache
+func NewCache() *Cache {
+	return &Cache{
 		store: make(map[string]CacheEntry),
 	}
 }
 
 // Set adds an entry to the cache with a specific expiration time
-func (c *SimpleCache) Set(key string, value interface{}, duration time.Duration) {
+func (c *Cache) Set(key string, value interface{}, duration time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.store[key] = CacheEntry{
@@ -35,7 +35,7 @@ func (c *SimpleCache) Set(key string, value interface{}, duration time.Duration)
 }
 
 // Get retrieves an entry from the cache
-func (c *SimpleCache) Get(key string) (interface{}, bool) {
+func (c *Cache) Get(key string) (interface{}, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	entry, found := c.store[key]
@@ -46,14 +46,14 @@ func (c *SimpleCache) Get(key string) (interface{}, bool) {
 }
 
 // Delete removes an entry from the cache
-func (c *SimpleCache) Delete(key string) {
+func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.store, key)
 }
 
 // Flush clears the entire cache
-func (c *SimpleCache) Flush() {
+func (c *Cache) Flush() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.store = make(map[string]CacheEntry)

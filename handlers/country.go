@@ -21,7 +21,7 @@ type Country struct {
 	NameES string `json:"namees,omitempty"`
 }
 
-var countryCache = cache.NewSimpleCache()
+var countryCache = cache.NewCache()
 
 func (handler *Handler) GetAllCountries(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error

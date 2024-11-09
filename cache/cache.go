@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// CacheEntry represents a single entry in the cache
-type CacheEntry struct {
+// Entry represents a single entry in the cache
+type Entry struct {
 	Value      interface{}
 	Expiration int64
 }
@@ -14,13 +14,13 @@ type CacheEntry struct {
 // Cache is a basic in-memory cache
 type Cache struct {
 	mu    sync.RWMutex
-	store map[string]CacheEntry
+	store map[string]Entry
 }
 
 // NewCache creates a new instance of Cache
 func NewCache() *Cache {
 	return &Cache{
-		store: make(map[string]CacheEntry),
+		store: make(map[string]Entry),
 	}
 }
 
@@ -28,7 +28,7 @@ func NewCache() *Cache {
 func (c *Cache) Set(key string, value interface{}, duration time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.store[key] = CacheEntry{
+	c.store[key] = Entry{
 		Value:      value,
 		Expiration: time.Now().Add(duration).UnixNano(),
 	}
@@ -56,5 +56,5 @@ func (c *Cache) Delete(key string) {
 func (c *Cache) Flush() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.store = make(map[string]CacheEntry)
+	c.store = make(map[string]Entry)
 }

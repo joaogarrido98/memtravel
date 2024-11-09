@@ -20,7 +20,7 @@ var templates = template.Must(template.ParseFS(fs, "templates/*.html"))
 
 func main() {
 	// open a connection to the database
-	database, err := db.DBConnect()
+	database, err := db.Connect()
 	if err != nil {
 		log.Fatalf("could not connect to database: %s", err)
 	}
@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("POST /account/password/change", authMiddleware(handler.PasswordChangeHandler))
 	http.HandleFunc("POST /account/close", authMiddleware(handler.CloseAccountHandler))
 	http.HandleFunc("POST /account/privacystatus", authMiddleware(handler.PrivacyStatusHandler))
+	http.HandleFunc("POST /account/update/country", authMiddleware(handler.UpdateCountryHandler))
 	http.HandleFunc("GET /account/activate/{code}", middleware.LogMiddleware(handler.ActivateAccountHandler))
 
 	// friends deals with anything that is part of the social interaction
@@ -73,7 +74,7 @@ func main() {
 	http.HandleFunc("POST /organise/request", authMiddleware(handler.FriendRequestHandler))
 
 	// country
-	http.HandleFunc("GET /country/all", authMiddleware(handler.GetAllCountries))
+	http.HandleFunc("GET /country/all", middleware.LogMiddleware(handler.GetAllCountries))
 
 	// legal
 	http.HandleFunc("GET /legal/termsandconditions", func(w http.ResponseWriter, r *http.Request) {

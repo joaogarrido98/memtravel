@@ -22,8 +22,8 @@ type (
 	}
 )
 
-// DBConnect init the database connection
-func DBConnect() (Database, error) {
+// Connect init the database connection
+func Connect() (Database, error) {
 	connStr := configs.Envs.DBUser + "://" +
 		configs.Envs.DBUser + ":" +
 		configs.Envs.DBPassword + "@" +

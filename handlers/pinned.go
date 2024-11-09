@@ -30,12 +30,14 @@ func (handler *Handler) AddPinnedHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	row, deferredErr := handler.database.Query(db.TripBelongsToUser, userID, tripID)
+	rows, deferredErr := handler.database.Query(db.TripBelongsToUser, userID, tripID)
 	if deferredErr != nil {
 		return
 	}
 
-	if !row.Next() {
+	defer rows.Close()
+
+	if !rows.Next() {
 		deferredErr = fmt.Errorf("%d trip does not belong to user", tripID)
 		return
 	}

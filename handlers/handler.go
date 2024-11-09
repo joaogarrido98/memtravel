@@ -56,6 +56,7 @@ const (
 	friendParamID        string = "friend"
 	privacyParamID       string = "pid"
 	tripParamID          string = "tpid"
+	countryParamID       string = "cid"
 )
 
 var (

@@ -1,6 +1,9 @@
 package db
 
 const (
+	// Userdate
+	UpdateUserCountry = "UPDATE users SET country=$1 WHERE userid=$2"
+
 	// Create Account
 	AddNewUser        = "INSERT INTO users (email, password, fullname, dob, country) VALUES ($1, $2, $3, $4, $5)"
 	AddUserFlags      = "INSERT INTO userflags (userid) VALUES ((SELECT userid FROM users WHERE email = $1))"
@@ -10,8 +13,8 @@ const (
 
 	// Login
 	GetUserLogin       = "SELECT u.userid, u.email, u.password, u.active, uc.loginattempt, u.fullname FROM users u JOIN usercounters uc ON u.userid = uc.userid WHERE u.email=$1"
-	UpdateLoginCounter = "Update usercounters SET loginattempt = loginattempt + 1 WHERE userid = $1"
-	ResetLoginCounter  = "Update usercounters SET loginattempt = 0 WHERE userid = $1"
+	UpdateLoginCounter = "UPDATE usercounters SET loginattempt = loginattempt + 1 WHERE userid = $1"
+	ResetLoginCounter  = "UPDATE usercounters SET loginattempt = 0 WHERE userid = $1"
 
 	// Password
 	UpdateUserPassword = "UPDATE users SET password=$1 WHERE email=$2"
@@ -47,5 +50,5 @@ const (
 	RemoveTrip = "DELETE FROM trips WHERE id=$1 AND userid=$2"
 
 	// Countries
-	GetAllCountries = "SELECT id, iso, %s FROM countries"
+	GetAllCountries = "SELECT id, iso, %s FROM countries ORDER BY %s"
 )

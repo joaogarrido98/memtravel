@@ -35,6 +35,11 @@ func (w *WrappedWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 }
 
+// func (w *WrappedWriter) Write(message []byte) (int, error) {
+// 	logger.Info("", "result", message)
+// 	return w.ResponseWriter.Write(message)
+// }
+
 var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 const (

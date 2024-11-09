@@ -61,13 +61,15 @@ func (handler *Handler) FriendRequestHandler(w http.ResponseWriter, r *http.Requ
 
 	switch requestType {
 	case addNewFriendRequest:
-		var row *sql.Rows
-		row, deferredErr = handler.database.Query(db.CheckIfUserHasFriend, userID, friendID)
+		var rows *sql.Rows
+		rows, deferredErr = handler.database.Query(db.CheckIfUserHasFriend, userID, friendID)
 		if deferredErr != nil {
 			return
 		}
 
-		if row.Next() {
+		defer rows.Close()
+
+		if rows.Next() {
 			deferredErr = fmt.Errorf("%s is already an existing friend", friendParam)
 			return
 		}

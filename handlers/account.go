@@ -442,6 +442,8 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	defer rows.Close()
+
 	if rows.Next() {
 		deferredErr = writeServerResponse(w, false, language.GetTranslation(languageID, language.AccountExisting))
 		return

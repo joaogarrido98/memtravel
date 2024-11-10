@@ -1,13 +1,15 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"memtravel/cache"
-	"memtravel/middleware"
 	"net/http"
+	"strconv"
 	"time"
+
+	"memtravel/cache"
+	"memtravel/db"
+	"memtravel/middleware"
 )
 
 type (
@@ -23,6 +25,13 @@ type (
 		DaysTravelling int
 		TotalCountries int
 		TotalCities    int
+	}
+
+	SearchUser struct {
+		Username       string `json:"username"`
+		FullName       string `json:"fullname"`
+		ProfilePicture string `json:"profilepicture"`
+		Page           int    `json:"page"`
 	}
 )
 
@@ -45,50 +54,64 @@ func (handler *Handler) SearchUsersHandler(w http.ResponseWriter, r *http.Reques
 	userID := r.Context().Value(middleware.AuthUserID)
 
 	searchQuery := r.URL.Query().Get("query")
-	if len(searchQuery) == 0 {
-		deferredErr = errors.New("search query parameter is required")
-		return
-	}
-
 	if len(searchQuery) < 2 {
 		writeServerResponse(w, true, []User{})
-	}
-
-	if cachedSearch, ok := userCache.Get(searchQuery); ok {
-		writeServerResponse(w, true, cachedSearch)
 		return
 	}
 
-	query := `
-        SELECT userid, fullname, profilepic
-        FROM users
-        WHERE active = true AND userid != $1 AND fullname LIKE %$2%`
+	page := 1
+	limit := 20
 
-	rows, err := handler.database.Query(query, userID, searchQuery)
-	if err != nil {
-		deferredErr = fmt.Errorf("failed to query users: %v", err)
+	p := r.URL.Query().Get("page")
+	if p != "" {
+		page, deferredErr = strconv.Atoi(p)
+		if deferredErr != nil {
+			return
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	if page == 1 {
+		if cachedSearch, ok := userCache.Get(searchQuery); ok {
+			writeServerResponse(w, true, cachedSearch)
+			return
+		}
+	}
+
+	rows, deferredErr := handler.database.Query(db.SearchUser, userID, searchQuery, offset)
+	if deferredErr != nil {
+		deferredErr = fmt.Errorf("failed to query users: %v", deferredErr)
 		return
 	}
 
 	defer rows.Close()
 
-	var results []User
+	var results []SearchUser
 
 	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.UserID, &user.FullName, &user.ProfilePicture); err != nil {
-			deferredErr = fmt.Errorf("failed to scan user row: %v", err)
+		var user SearchUser
+
+		deferredErr = rows.Scan(&user.FullName, &user.Username, &user.ProfilePicture)
+		if deferredErr != nil {
+			deferredErr = fmt.Errorf("failed to scan user row: %v", deferredErr)
 			return
 		}
+
+		user.Page = page
+
 		results = append(results, user)
 	}
 
-	if err := rows.Err(); err != nil {
-		deferredErr = fmt.Errorf("error iterating over result rows: %v", err)
+	deferredErr = rows.Err()
+	if deferredErr != nil {
+		deferredErr = fmt.Errorf("error iterating over result rows: %v", deferredErr)
 		return
 	}
 
-	userCache.Set(searchQuery, results, 2*time.Minute)
+	if page == 1 {
+		userCache.Set(searchQuery, results, 2*time.Minute)
+	}
 
 	deferredErr = writeServerResponse(w, true, results)
 }

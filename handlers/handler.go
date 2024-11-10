@@ -16,6 +16,7 @@ type (
 	// User is the blueprint for the user data
 	User struct {
 		UserID         int          `json:"userid,omitempty"`
+		Username       string       `json:"username,omitempty"`
 		Email          string       `json:"email,omitempty"`
 		Token          string       `json:"token,omitempty"`
 		Password       string       `json:"password,omitempty"`

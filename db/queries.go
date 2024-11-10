@@ -1,11 +1,12 @@
 package db
 
 const (
-	// Userdate
+	// User data
 	UpdateUserCountry = "UPDATE users SET country=$1 WHERE userid=$2"
+	SearchUser        = "SELECT fullname, username, profilepic FROM users WHERE active = true AND userid != $1 AND username ILIKE '%' || $2 || '%' ORDER BY username LIMIT 20 OFFSET $3"
 
 	// Create Account
-	AddNewUser        = "INSERT INTO users (email, password, fullname, dob, country) VALUES ($1, $2, $3, $4, $5)"
+	AddNewUser        = "INSERT INTO users (email, password, fullname, dob, country, username) VALUES ($1, $2, $3, $4, $5, $6)"
 	AddUserFlags      = "INSERT INTO userflags (userid) VALUES ((SELECT userid FROM users WHERE email = $1))"
 	AddUserCounters   = "INSERT INTO usercounters (userid) VALUES ((SELECT userid FROM users WHERE email = $1))"
 	AddActivationCode = "INSERT INTO activation (code, email) VALUES ($1, $2)"

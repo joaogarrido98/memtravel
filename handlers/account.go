@@ -455,12 +455,20 @@ func (handler *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	activationCode := generateRandomString()
+	timestamp := time.Now().Format("020106150405")
+	dobFormatted := dateOfBirth.Format("020106")
+
+	var username strings.Builder
+	username.WriteString("@")
+	username.WriteString(strings.ReplaceAll(strings.ToLower(registerRequest.FullName), " ", ""))
+	username.WriteString(dobFormatted)
+	username.WriteString(timestamp)
 
 	deferredErr = handler.database.ExecTransaction(
 		[]db.Transaction{
 			{
 				Query:  db.AddNewUser,
-				Params: []any{registerRequest.Email, hashedPassword, registerRequest.FullName, registerRequest.DoB, registerRequest.Country},
+				Params: []any{registerRequest.Email, hashedPassword, registerRequest.FullName, registerRequest.DoB, registerRequest.Country, username.String()},
 			},
 			{
 				Query:  db.AddUserFlags,

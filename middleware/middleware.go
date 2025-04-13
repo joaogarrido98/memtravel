@@ -80,8 +80,6 @@ func BaseMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		clientIP := getClientIP(r)
 
 		if !ratelimiter.GetGlobalLimiter().Allow(clientIP) {
-			contextID, _ := r.Context().Value(RequestContextID).(string)
-
 			logger.Warn(
 				contextID,
 				"message", "Rate limit exceeded",

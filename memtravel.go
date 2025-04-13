@@ -11,6 +11,7 @@ import (
 	"memtravel/db"
 	"memtravel/handlers"
 	"memtravel/middleware"
+	"memtravel/ratelimiter"
 )
 
 //go:embed templates/*.html static/*.html
@@ -28,22 +29,23 @@ func main() {
 	log.Println("database connected")
 
 	defer database.Close()
+	defer ratelimiter.ShutdownLimiter()
 
 	// create a new handler which has database and templates available
 	handler := handlers.NewHandler(database, templates)
 
 	// create the middlewares we need
-	authMiddleware := middleware.CreateStack(middleware.LogMiddleware, middleware.AuthMiddleware)
+	authMiddleware := middleware.CreateStack(middleware.BaseMiddleware, middleware.AuthMiddleware)
 
 	// account deals only with user based interaction
-	http.HandleFunc("POST /account/login", middleware.LogMiddleware(handler.LoginHandler))
-	http.HandleFunc("POST /account/register", middleware.LogMiddleware(handler.RegisterHandler))
-	http.HandleFunc("POST /account/password/recover", middleware.LogMiddleware(handler.PasswordRecoverHandler))
+	http.HandleFunc("POST /account/login", middleware.BaseMiddleware(handler.LoginHandler))
+	http.HandleFunc("POST /account/register", middleware.BaseMiddleware(handler.RegisterHandler))
+	http.HandleFunc("POST /account/password/recover", middleware.BaseMiddleware(handler.PasswordRecoverHandler))
 	http.HandleFunc("POST /account/password/change", authMiddleware(handler.PasswordChangeHandler))
 	http.HandleFunc("POST /account/close", authMiddleware(handler.CloseAccountHandler))
 	http.HandleFunc("POST /account/privacystatus", authMiddleware(handler.PrivacyStatusHandler))
 	http.HandleFunc("POST /account/update/country", authMiddleware(handler.UpdateCountryHandler))
-	http.HandleFunc("GET /account/activate/{code}", middleware.LogMiddleware(handler.ActivateAccountHandler))
+	http.HandleFunc("GET /account/activate/{code}", middleware.BaseMiddleware(handler.ActivateAccountHandler))
 
 	// friends deals with anything that is part of the social interaction
 	http.HandleFunc("POST /friends/request/{type}", authMiddleware(handler.FriendRequestHandler))
@@ -74,7 +76,7 @@ func main() {
 	http.HandleFunc("POST /organise/request", authMiddleware(handler.FriendRequestHandler))
 
 	// country
-	http.HandleFunc("GET /country/all", middleware.LogMiddleware(handler.GetAllCountries))
+	http.HandleFunc("GET /country/all", middleware.BaseMiddleware(handler.GetAllCountries))
 
 	// legal
 	http.HandleFunc("GET /legal/termsandconditions", func(w http.ResponseWriter, r *http.Request) {

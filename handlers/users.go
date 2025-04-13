@@ -27,11 +27,9 @@ type (
 		TotalCities    int
 	}
 
-	SearchUser struct {
-		Username       string `json:"username"`
-		FullName       string `json:"fullname"`
-		ProfilePicture string `json:"profilepicture"`
-		Page           int    `json:"page"`
+	SearchUserResult struct {
+		Users []User `json:"user"`
+		Page  int    `json:"page"`
 	}
 )
 
@@ -87,10 +85,12 @@ func (handler *Handler) SearchUsersHandler(w http.ResponseWriter, r *http.Reques
 
 	defer rows.Close()
 
-	var results []SearchUser
+	results := SearchUserResult{
+		Page: page,
+	}
 
 	for rows.Next() {
-		var user SearchUser
+		var user User
 
 		deferredErr = rows.Scan(&user.FullName, &user.Username, &user.ProfilePicture)
 		if deferredErr != nil {
@@ -98,9 +98,7 @@ func (handler *Handler) SearchUsersHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		user.Page = page
-
-		results = append(results, user)
+		results.Users = append(results.Users, user)
 	}
 
 	deferredErr = rows.Err()

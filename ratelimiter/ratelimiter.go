@@ -19,15 +19,26 @@ type RateLimiter struct {
 	quit       chan struct{}
 }
 
-// NewRateLimiter creates a new rate limiter with specified rate and capacity
-func newRateLimiter(rate float64, capacity float64) *RateLimiter {
+// newRateLimiter creates a new rate limiter with specified rate and capacity
+// Optional custom timeout and cleanup interval (set to 0 to use default)
+func newRateLimiter(rate float64, capacity float64, options ...time.Duration) *RateLimiter {
+	ipTimeout := 30 * time.Minute
+	cleanupInt := 5 * time.Minute
+
+	if len(options) > 0 && options[0] > 0 {
+		ipTimeout = options[0]
+	}
+	if len(options) > 1 && options[1] > 0 {
+		cleanupInt = options[1]
+	}
+
 	rl := &RateLimiter{
 		tokens:     make(map[string]float64),
 		lastUpdate: make(map[string]time.Time),
 		rate:       rate,
 		capacity:   capacity,
-		ipTimeout:  30 * time.Minute,
-		cleanupInt: 5 * time.Minute,
+		ipTimeout:  ipTimeout,
+		cleanupInt: cleanupInt,
 		quit:       make(chan struct{}),
 	}
 
@@ -89,6 +100,20 @@ func (rl *RateLimiter) Allow(ip string) bool {
 	}
 
 	return false
+}
+
+// GetStats returns the current token count and last update time for an IP
+func (rl *RateLimiter) GetStats(ip string) (float64, bool, time.Time) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	tokens, exist := rl.tokens[ip]
+	return tokens, exist, rl.lastUpdate[ip]
+}
+
+// GetGlobalLimiter returns the global rate limiter
+func GetGlobalLimiter() *RateLimiter {
+	return globalLimiter
 }
 
 // ShutdownLimiter should be called when the application is shutting down

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"memtravel/auth"
+	"memtravel/ratelimiter"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -78,7 +79,7 @@ func BaseMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		clientIP := getClientIP(r)
 
-		if !limiter.Allow(clientIP) {
+		if !ratelimiter.GetGlobalLimiter().Allow(clientIP) {
 			contextID, _ := r.Context().Value(RequestContextID).(string)
 
 			logger.Warn(

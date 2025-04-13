@@ -1,8 +1,12 @@
 package db
 
 const (
+	// User data
+	UpdateUserCountry = "UPDATE users SET country=$1 WHERE userid=$2"
+	SearchUser        = "SELECT fullname, username, profilepic FROM users WHERE active = true AND userid != $1 AND username ILIKE '%' || $2 || '%' ORDER BY username LIMIT 20 OFFSET $3"
+
 	// Create Account
-	AddNewUser        = "INSERT INTO users (email, password, fullname, dob, country) VALUES ($1, $2, $3, $4, $5)"
+	AddNewUser        = "INSERT INTO users (email, password, fullname, dob, country, username) VALUES ($1, $2, $3, $4, $5, $6)"
 	AddUserFlags      = "INSERT INTO userflags (userid) VALUES ((SELECT userid FROM users WHERE email = $1))"
 	AddUserCounters   = "INSERT INTO usercounters (userid) VALUES ((SELECT userid FROM users WHERE email = $1))"
 	AddActivationCode = "INSERT INTO activation (code, email) VALUES ($1, $2)"
@@ -10,8 +14,8 @@ const (
 
 	// Login
 	GetUserLogin       = "SELECT u.userid, u.email, u.password, u.active, uc.loginattempt, u.fullname FROM users u JOIN usercounters uc ON u.userid = uc.userid WHERE u.email=$1"
-	UpdateLoginCounter = "Update usercounters SET loginattempt = loginattempt + 1 WHERE userid = $1"
-	ResetLoginCounter  = "Update usercounters SET loginattempt = 0 WHERE userid = $1"
+	UpdateLoginCounter = "UPDATE usercounters SET loginattempt = loginattempt + 1 WHERE userid = $1"
+	ResetLoginCounter  = "UPDATE usercounters SET loginattempt = 0 WHERE userid = $1"
 
 	// Password
 	UpdateUserPassword = "UPDATE users SET password=$1 WHERE email=$2"
@@ -47,5 +51,5 @@ const (
 	RemoveTrip = "DELETE FROM trips WHERE id=$1 AND userid=$2"
 
 	// Countries
-	GetAllCountries = "SELECT id, iso, %s FROM countries"
+	GetAllCountries = "SELECT id, iso, %s FROM countries ORDER BY %s"
 )

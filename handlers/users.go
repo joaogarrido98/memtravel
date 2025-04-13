@@ -1,9 +1,15 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
-	"memtravel/middleware"
 	"net/http"
+	"strconv"
+	"time"
+
+	"memtravel/cache"
+	"memtravel/db"
+	"memtravel/middleware"
 )
 
 type (
@@ -20,7 +26,14 @@ type (
 		TotalCountries int
 		TotalCities    int
 	}
+
+	SearchUserResult struct {
+		Users []User `json:"user"`
+		Page  int    `json:"page"`
+	}
 )
+
+var userCache = cache.NewCache()
 
 func (handler *Handler) SearchUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var deferredErr error
@@ -36,6 +49,69 @@ func (handler *Handler) SearchUsersHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}()
 
+	userID := r.Context().Value(middleware.AuthUserID)
+
+	searchQuery := r.URL.Query().Get("query")
+	if len(searchQuery) < 2 {
+		writeServerResponse(w, true, []User{})
+		return
+	}
+
+	page := 1
+	limit := 20
+
+	p := r.URL.Query().Get("page")
+	if p != "" {
+		page, deferredErr = strconv.Atoi(p)
+		if deferredErr != nil {
+			return
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	if page == 1 {
+		if cachedSearch, ok := userCache.Get(searchQuery); ok {
+			writeServerResponse(w, true, cachedSearch)
+			return
+		}
+	}
+
+	rows, deferredErr := handler.database.Query(db.SearchUser, userID, searchQuery, offset)
+	if deferredErr != nil {
+		deferredErr = fmt.Errorf("failed to query users: %v", deferredErr)
+		return
+	}
+
+	defer rows.Close()
+
+	results := SearchUserResult{
+		Page: page,
+	}
+
+	for rows.Next() {
+		var user User
+
+		deferredErr = rows.Scan(&user.FullName, &user.Username, &user.ProfilePicture)
+		if deferredErr != nil {
+			deferredErr = fmt.Errorf("failed to scan user row: %v", deferredErr)
+			return
+		}
+
+		results.Users = append(results.Users, user)
+	}
+
+	deferredErr = rows.Err()
+	if deferredErr != nil {
+		deferredErr = fmt.Errorf("error iterating over result rows: %v", deferredErr)
+		return
+	}
+
+	if page == 1 {
+		userCache.Set(searchQuery, results, 2*time.Minute)
+	}
+
+	deferredErr = writeServerResponse(w, true, results)
 }
 
 func (handler *Handler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
